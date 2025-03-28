@@ -1,50 +1,132 @@
-import { 
-  Typography, Button, TableContainer, Stack, Paper, Table, 
-  TableHead, TableBody, TableRow, TableCell, TextField, Dialog, DialogActions, 
-  DialogContent, DialogTitle
+import {
+  Typography,
+  Button,
+  Stack,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  CircularProgress,
+  Box,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+} from "material-react-table";
+import useProductos from "../hooks/useProductos";
+import useCreateProducto from "../hooks/productos/useCreateProductos";
+import useDeleteProducto from "../hooks/productos/useDeleteProcusto";
+import useUpdateProducto from "../hooks/productos/useUpdateProductos";
+import useTipoProductos from "../hooks/tipoProducto/useTipoProducto";
+import toast, { Toaster } from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Inventario() {
-  const [productos, setProductos] = useState([]);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+  const {
+    data: productos,
+    isLoading: isLoadingProductos,
+    isError: isErrorProductos,
+    error: productosError,
+  } = useProductos();
+  const createProductoMutation = useCreateProducto({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["productos"] });
+      toast.success(`Producto creado exitosamente`);
+      handleCloseDialog();
+    },
+    onError: (error) => {
+      toast.error(`Error al crear el producto: ${error.message}`);
+    },
+  });
+
+  const updateProductoMutation = useUpdateProducto({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["productos"] });
+      toast.success(`Producto actualizado exitosamente`);
+      handleCloseDialog();
+    },
+    onError: (error) => {
+      toast.error(`Error al actualizar el producto: ${error.message}`);
+    },
+  });
+
+  const deleteProductoMutation = useDeleteProducto({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["productos"] });
+      toast.success(`Producto eliminado exitosamente`);
+    },
+    onError: (error) => {
+      toast.error(`Error al eliminar el producto: ${error.message}`);
+    },
+  });
   const [openDialog, setOpenDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [newProduct, setNewProduct] = useState({ nombre: "", tipo_producto_id: "", stock: 0, stock_minimo: 0, almacen_id: "" });
-  const [categorias, setCategorias] = useState([]);
+  const [newProduct, setNewProduct] = useState({
+    nombre: "",
+    tipo_producto_id: "",
+    stock: 0,
+    stock_minimo: 0,
+    almacen_id: "",
+  });
+  const { data: categorias } = useTipoProductos();
 
-  // Obtener productos, categorías y almacenes al cargar la página
-  useEffect(() => {
-    fetchProductos();
-    fetchCategorias();
-  }, []);
-
-  const fetchProductos = async () => {
-    try {
-      const response = await fetch("http://localhost:3000/api/productos");
-      if (!response.ok) throw new Error("Error al obtener productos");
-      const data = await response.json();
-      console.log("Productos recibidos:", data); 
-      setProductos(data);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const fetchCategorias = async () => {
-    try {
-      const response = await fetch("http://localhost:3000/api/productos/tipo_producto");
-      if (!response.ok) throw new Error("Error al obtener categorías");
-      const data = await response.json();
-      setCategorias(data);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  const columns = useMemo(
+    () => [
+      {
+        header: "Producto",
+        accessorKey: "nombre",
+      },
+      {
+        header: "Stock",
+        accessorKey: "stock",
+      },
+      {
+        header: "Stock Mínimo",
+        accessorKey: "stock_minimo",
+      },
+      {
+        header: "Acciones",
+        enableColumnFilter: false,
+        enableSorting: false,
+        Cell: ({ row }) => (
+          <>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => handleOpenDialog(row.original)}
+              sx={{ mr: 1 }}
+            >
+              Editar
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              onClick={() => deleteProductoMutation.mutate(row.original.id)}
+            >
+              Eliminar
+            </Button>
+          </>
+        ),
+      },
+    ],
+    []
+  );
 
   // Manejar cambios en el formulario
   const handleInputChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
+  };
+
+  const handleSelectChange = (e) => {
+    console.log(e.target.value);
+    setNewProduct({ ...newProduct, tipo_producto_id: e.target.value });
   };
 
   // Abrir formulario para crear o editar producto
@@ -58,7 +140,6 @@ export default function Inventario() {
     });
     setOpenDialog(true);
   };
-  
 
   // Cerrar formulario
   const handleCloseDialog = () => {
@@ -67,117 +148,125 @@ export default function Inventario() {
 
   // Guardar o actualizar producto
   const handleSaveProduct = async () => {
-    try {
-      const method = editingProduct ? "PUT" : "POST";
-      const url = editingProduct
-        ? `http://localhost:3000/api/productos/${editingProduct.id}`
-        : "http://localhost:3000/api/productos";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    if (editingProduct) {
+      updateProductoMutation.mutate({
+        id: editingProduct.id,
+        productoData: {
           nombre: newProduct.nombre,
           tipo_producto_id: newProduct.tipo_producto_id,
           stock: newProduct.stock,
           stock_minimo: newProduct.stock_minimo,
-        }),
+        },
       });
-
-      if (!response.ok) throw new Error("Error al guardar producto");
-
-      fetchProductos();
-      handleCloseDialog();
-    } catch (err) {
-      setError(err.message);
+    } else if (!editingProduct) {
+      createProductoMutation.mutate({
+        nombre: newProduct.nombre,
+        tipo_producto_id: newProduct.tipo_producto_id,
+        stock: newProduct.stock,
+        stock_minimo: newProduct.stock_minimo,
+        almacen_id: 2,
+      });
     }
   };
 
-  // Eliminar producto
-  const handleDeleteProduct = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:3000/api/productos/${id}`, {
-        method: "DELETE",
-      });
+  const table = useMaterialReactTable({
+    columns,
+    data: productos || [], //must be memoized or stable (useState, useMemo, defined outside of this component, etc.)
+    enableRowSelection: false, //enable some features
+    enableColumnOrdering: true, //enable a feature for all columns
+    enableGlobalFilter: true, //turn off a feature
+    enableColumnFilters: true,
+    isLoading: isLoadingProductos,
+  });
 
-      if (!response.ok) throw new Error("Error al eliminar producto");
+  if (isLoadingProductos) {
+    return <CircularProgress />;
+  }
 
-      fetchProductos();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  if (isErrorProductos) {
+    return <Alert severity={"error"}>{productosError}</Alert>;
+  }
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h6">Inventario</Typography>
-      {error && <Typography color="error">{error}</Typography>}
-
-      <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
-        Agregar Producto
-      </Button>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Producto</TableCell>
-              <TableCell>Categoría</TableCell>
-              <TableCell>Stock</TableCell>
-              <TableCell>Stock Mínimo</TableCell>
-              <TableCell>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {productos.map((producto) => (
-              <TableRow key={producto.id}>
-                <TableCell>{producto.nombre}</TableCell>
-                <TableCell>{producto.tipoProducto?.nombre || "Desconocido"}</TableCell>
-                <TableCell>{producto.stock}</TableCell>
-                <TableCell>{producto.stock_minimo}</TableCell>
-                <TableCell>
-                  <Button variant="contained" color="primary" onClick={() => handleOpenDialog(producto)}>
-                    Editar
-                  </Button>
-                  <Button variant="contained" color="secondary" onClick={() => handleDeleteProduct(producto.id)}>
-                    Eliminar
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
+      <Toaster position="top-center" />
+      <Box display={"flex"} justifyContent={"space-between"}>
+        <Typography variant="h6">Inventario</Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => handleOpenDialog()}
+        >
+          Agregar Producto
+        </Button>
+      </Box>
+      <MaterialReactTable table={table} />
       {/* Formulario para crear o editar productos */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{editingProduct ? "Editar Producto" : "Agregar Producto"}</DialogTitle>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        fullWidth={true}
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          {editingProduct ? "Editar Producto" : "Agregar Producto"}
+        </DialogTitle>
         <DialogContent>
-          <TextField fullWidth margin="dense" label="Nombre" name="nombre" value={newProduct.nombre} onChange={handleInputChange} />
-          
-          <TextField
-            select
-            label="Categoría"
-            name="tipo_producto_id"
-            value={newProduct.tipo_producto_id}
-            onChange={handleInputChange}
-            fullWidth
-            SelectProps={{ native: true }}
-          >
-            <option value="">Selecciona una categoría</option>
-            {categorias.map((categoria) => (
-              <option key={categoria.id} value={categoria.id}>
-                {categoria.nombre}
-              </option>
-            ))}
-          </TextField>
+          <Stack spacing={2} mt={2}>
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Nombre"
+              name="nombre"
+              value={newProduct.nombre}
+              onChange={handleInputChange}
+            />
+            <Select
+              labelId="Categoría"
+              id="categoria"
+              value={newProduct.tipo_producto_id}
+              label="Categoría"
+              onChange={handleSelectChange}
+            >
+              <MenuItem value="">Selecciona una categoría</MenuItem>
+              {categorias?.map((categoria) => (
+                <MenuItem key={categoria.id} value={categoria.id}>
+                  {categoria.nombre}
+                </MenuItem>
+              ))}
+            </Select>
 
-          <TextField fullWidth margin="dense" label="Stock" name="stock" type="number" value={newProduct.stock} onChange={handleInputChange} />
-          <TextField fullWidth margin="dense" label="Stock Mínimo" name="stock_minimo" type="number" value={newProduct.stock_minimo} onChange={handleInputChange} />
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Stock"
+              name="stock"
+              type="number"
+              value={newProduct.stock}
+              onChange={handleInputChange}
+            />
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Stock Mínimo"
+              name="stock_minimo"
+              type="number"
+              value={newProduct.stock_minimo}
+              onChange={handleInputChange}
+            />
+          </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="secondary">Cancelar</Button>
-          <Button onClick={handleSaveProduct} color="primary">Guardar</Button>
+          <Button onClick={handleCloseDialog} color="secondary">
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSaveProduct}
+            color="primary"
+            loading={updateProductoMutation.isPending}
+          >
+            Guardar
+          </Button>
         </DialogActions>
       </Dialog>
     </Stack>

@@ -27,6 +27,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import useUserStore from "../stores/userStore";
 import { useEffect, useState } from "react";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 
 const drawerWidth = 240;
 
@@ -38,7 +39,7 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
-    marginLeft: `-${drawerWidth}px`,
+    marginLeft: 0,
     variants: [
       {
         props: ({ open }) => open,
@@ -47,7 +48,7 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
             easing: theme.transitions.easing.easeOut,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          marginLeft: 0,
+          marginLeft: `${drawerWidth}px`,
         },
       },
     ],
@@ -108,7 +109,7 @@ export default function DrawerNegocify() {
   };
 
   const handleDrawerOpen = () => {
-    setOpen(true);
+    setOpen(!open);
   };
 
   const handleDrawerClose = () => {
@@ -118,25 +119,53 @@ export default function DrawerNegocify() {
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
-      <AppBar position="fixed" open={open}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            edge="start"
-            sx={[
-              {
-                mr: 2,
-              },
-              open && { display: "none" },
-            ]}
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Box
+            width={"100%"}
+            display={"flex"}
+            justifyContent={"flex-start"}
+            alignItems={"center"}
           >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Negocify
-          </Typography>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              onClick={handleDrawerOpen}
+              edge="start"
+              sx={[
+                {
+                  mr: 2,
+                },
+              ]}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" noWrap component="div">
+              Negocify
+            </Typography>
+          </Box>
+          <Box
+            width={"100%"}
+            display={"flex"}
+            justifyContent={"flex-end"}
+            alignItems={"center"}
+          >
+            <FormControl>
+              <InputLabel id="demo-simple-select-label">Age</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                label="Age"
+              >
+                <MenuItem value={10}>Ten</MenuItem>
+                <MenuItem value={20}>Twenty</MenuItem>
+                <MenuItem value={30}>Thirty</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -148,7 +177,7 @@ export default function DrawerNegocify() {
             boxSizing: "border-box",
           },
         }}
-        variant="persistent"
+        variant="temporary"
         anchor="left"
         open={open}
       >
