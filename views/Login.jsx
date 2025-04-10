@@ -22,7 +22,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { setUserToken, setUserData } = useUserStore();
+  const { setUserToken, setUserData, setUserAlmacenes } = useUserStore();
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -49,7 +49,11 @@ export default function Login() {
     try {
       const response = await userLogin(formData);
       setUserToken(response?.data?.token);
-      setUserData(response?.data?.usuario);
+      setUserData({
+        ...response?.data?.usuario,
+        isAdmin: response?.data?.permisos?.esAdminSistema,
+      });
+      setUserAlmacenes(response?.data?.permisos?.almacenes);
       navigate("/dashboard/inicio");
     } catch (error) {
       setError(error.message || "Error al iniciar sesión");

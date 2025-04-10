@@ -1,18 +1,15 @@
 import { Typography, Stack } from "@mui/material";
 import useUserStore from "../stores/userStore";
-import useProductos from "../hooks/useProductos";
 
 function Inicio() {
-  const { userData } = useUserStore();
-  const { data: productos } = useProductos();
+  const { userData, userAlmacenes } = useUserStore();
 
   return (
     <Stack spacing={2}>
       <Typography variant="h6">Inicio</Typography>
       <Typography variant="h6">Bienvenido {userData?.nombre}</Typography>
-      {productos?.map((producto) => {
-        return <h1>{producto.nombre}</h1>;
-      })}
+      {JSON.stringify(userData)}
+      {JSON.stringify(userAlmacenes)}
     </Stack>
   );
 }

@@ -16,7 +16,6 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import InboxIcon from "@mui/icons-material/MoveToInbox";
 import { Link, NavLink, useNavigate } from "react-router";
 import { Outlet } from "react-router";
 import HomeIcon from "@mui/icons-material/Home";
@@ -32,7 +31,7 @@ import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 const drawerWidth = 240;
 
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
-  ({ theme }) => ({
+  ({ theme, open }) => ({
     flexGrow: 1,
     padding: theme.spacing(3),
     transition: theme.transitions.create("margin", {
@@ -40,48 +39,37 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
       duration: theme.transitions.duration.leavingScreen,
     }),
     marginLeft: 0,
-    variants: [
-      {
-        props: ({ open }) => open,
-        style: {
-          transition: theme.transitions.create("margin", {
-            easing: theme.transitions.easing.easeOut,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-          marginLeft: `${drawerWidth}px`,
-        },
-      },
-    ],
+    ...(open && {
+      transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: `${drawerWidth}px`,
+    }),
   })
 );
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
-})(({ theme }) => ({
+})(({ theme, open }) => ({
   transition: theme.transitions.create(["margin", "width"], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  variants: [
-    {
-      props: ({ open }) => open,
-      style: {
-        width: `calc(100% - ${drawerWidth}px)`,
-        marginLeft: `${drawerWidth}px`,
-        transition: theme.transitions.create(["margin", "width"], {
-          easing: theme.transitions.easing.easeOut,
-          duration: theme.transitions.duration.enteringScreen,
-        }),
-      },
-    },
-  ],
+  ...(open && {
+    width: `calc(100% - ${drawerWidth}px)`,
+    marginLeft: `${drawerWidth}px`,
+    transition: theme.transitions.create(["margin", "width"], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  }),
 }));
 
 const DrawerHeader = styled("div")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
   ...theme.mixins.toolbar,
   justifyContent: "flex-end",
 }));
@@ -90,22 +78,32 @@ export default function DrawerNegocify() {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { setUserData, setUserToken, userToken } = useUserStore();
+  const {
+    setUserData,
+    setUserToken,
+    userToken,
+    setSelectedAlmacen,
+    selectedAlmacen,
+    userAlmacenes,
+  } = useUserStore();
 
-  useEffect(
-    () => {
-      //codigo
-      if (!userToken) {
-        navigate("/login");
-      }
-    },
-    [userToken, navigate] /* estado */
-  );
+  useEffect(() => {
+    if (!userToken) {
+      navigate("/login");
+    }
+  }, [userToken, navigate]);
+
+  useEffect(() => {
+    if (!selectedAlmacen && userAlmacenes && userAlmacenes.length > 0) {
+      setSelectedAlmacen(userAlmacenes[0]);
+    }
+  }, [userAlmacenes, selectedAlmacen, setSelectedAlmacen]);
 
   const cerrarSesion = () => {
     navigate("/login");
-    setUserData();
-    setUserToken();
+    setUserData(null);
+    setUserToken(null);
+    setSelectedAlmacen(null);
   };
 
   const handleDrawerOpen = () => {
@@ -114,6 +112,20 @@ export default function DrawerNegocify() {
 
   const handleDrawerClose = () => {
     setOpen(false);
+  };
+
+  const handleAlmacenChange = (event) => {
+    const selectedId = event.target.value;
+
+    const selectedObject = userAlmacenes.find(
+      (almacen) => almacen.id === selectedId
+    );
+
+    if (selectedObject) {
+      setSelectedAlmacen(selectedObject);
+    } else {
+      setSelectedAlmacen(null);
+    }
   };
 
   return (
@@ -125,7 +137,6 @@ export default function DrawerNegocify() {
       >
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Box
-            width={"100%"}
             display={"flex"}
             justifyContent={"flex-start"}
             alignItems={"center"}
@@ -135,11 +146,7 @@ export default function DrawerNegocify() {
               aria-label="open drawer"
               onClick={handleDrawerOpen}
               edge="start"
-              sx={[
-                {
-                  mr: 2,
-                },
-              ]}
+              sx={{ mr: 2 }}
             >
               <MenuIcon />
             </IconButton>
@@ -147,24 +154,51 @@ export default function DrawerNegocify() {
               Negocify
             </Typography>
           </Box>
+
           <Box
-            width={"100%"}
             display={"flex"}
             justifyContent={"flex-end"}
             alignItems={"center"}
           >
-            <FormControl>
-              <InputLabel id="demo-simple-select-label">Age</InputLabel>
-              <Select
-                labelId="demo-simple-select-label"
-                id="demo-simple-select"
-                label="Age"
+            {userAlmacenes && userAlmacenes.length > 0 && (
+              <FormControl
+                sx={{ m: 1, minWidth: 150 }}
+                size="small"
+                variant="outlined"
               >
-                <MenuItem value={10}>Ten</MenuItem>
-                <MenuItem value={20}>Twenty</MenuItem>
-                <MenuItem value={30}>Thirty</MenuItem>
-              </Select>
-            </FormControl>
+                <InputLabel id="almacen-select-label" sx={{ color: "white" }}>
+                  Almacén
+                </InputLabel>
+                <Select
+                  labelId="almacen-select-label"
+                  id="almacen-select"
+                  value={selectedAlmacen?.id || ""}
+                  label="Almacén"
+                  onChange={handleAlmacenChange}
+                  sx={{
+                    color: "white",
+                    ".MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "white",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "white",
+                    },
+                    ".MuiSvgIcon-root ": {
+                      fill: "white !important",
+                    },
+                  }}
+                >
+                  {userAlmacenes.map((almacen) => (
+                    <MenuItem key={almacen.id} value={almacen.id}>
+                      {almacen.nombre}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Box>
         </Toolbar>
       </AppBar>
@@ -193,7 +227,11 @@ export default function DrawerNegocify() {
         <Divider />
         <List>
           <ListItem disablePadding>
-            <ListItemButton onClick={() => navigate("/dashboard/inicio")}>
+            <ListItemButton
+              component={NavLink}
+              to="/dashboard/inicio"
+              onClick={handleDrawerClose}
+            >
               <ListItemIcon>
                 <HomeIcon />
               </ListItemIcon>
@@ -201,7 +239,11 @@ export default function DrawerNegocify() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={() => navigate("/dashboard/punto-venta")}>
+            <ListItemButton
+              component={NavLink}
+              to="/dashboard/punto-venta"
+              onClick={handleDrawerClose}
+            >
               <ListItemIcon>
                 <StorefrontIcon />
               </ListItemIcon>
@@ -209,7 +251,11 @@ export default function DrawerNegocify() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={() => navigate("/dashboard/ventas")}>
+            <ListItemButton
+              component={NavLink}
+              to="/dashboard/ventas"
+              onClick={handleDrawerClose}
+            >
               <ListItemIcon>
                 <TrendingUpIcon />
               </ListItemIcon>
@@ -217,7 +263,11 @@ export default function DrawerNegocify() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={() => navigate("/dashboard/inventario")}>
+            <ListItemButton
+              component={NavLink}
+              to="/dashboard/inventario"
+              onClick={handleDrawerClose}
+            >
               <ListItemIcon>
                 <InventoryIcon />
               </ListItemIcon>
@@ -225,7 +275,11 @@ export default function DrawerNegocify() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={() => navigate("/dashboard/usuarios")}>
+            <ListItemButton
+              component={NavLink}
+              to="/dashboard/usuarios"
+              onClick={handleDrawerClose}
+            >
               <ListItemIcon>
                 <PersonIcon />
               </ListItemIcon>
@@ -234,14 +288,16 @@ export default function DrawerNegocify() {
           </ListItem>
         </List>
         <Divider />
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => cerrarSesion()}>
-            <ListItemIcon>
-              <ExitToAppIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Cerrar Sesión"} />
-          </ListItemButton>
-        </ListItem>
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton onClick={cerrarSesion}>
+              <ListItemIcon>
+                <ExitToAppIcon />
+              </ListItemIcon>
+              <ListItemText primary={"Cerrar Sesión"} />
+            </ListItemButton>
+          </ListItem>
+        </List>
         <Divider />
       </Drawer>
       <Main open={open}>

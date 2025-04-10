@@ -6,8 +6,12 @@ const useUserStore = create(
     (set) => ({
       userToken: "",
       userData: {},
+      userAlmacenes: [],
+      selectedAlmacen: null,
       setUserToken: (userToken) => set({ userToken }),
       setUserData: (userData) => set({ userData }),
+      setUserAlmacenes: (userAlmacenes) => set({ userAlmacenes }),
+      setSelectedAlmacen: (selectedAlmacen) => set({ selectedAlmacen }),
     }),
     {
       name: "user-storage",

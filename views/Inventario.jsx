@@ -11,12 +11,9 @@ import {
   Box,
   Select,
   MenuItem,
+  Alert,
 } from "@mui/material";
 import { useState, useMemo } from "react";
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-} from "material-react-table";
 import useProductos from "../hooks/useProductos";
 import useCreateProducto from "../hooks/productos/useCreateProductos";
 import useDeleteProducto from "../hooks/productos/useDeleteProcusto";
@@ -24,6 +21,7 @@ import useUpdateProducto from "../hooks/productos/useUpdateProductos";
 import useTipoProductos from "../hooks/tipoProducto/useTipoProducto";
 import toast, { Toaster } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import DataTable from "../components/DataTable";
 
 export default function Inventario() {
   const queryClient = useQueryClient();
@@ -169,16 +167,6 @@ export default function Inventario() {
     }
   };
 
-  const table = useMaterialReactTable({
-    columns,
-    data: productos || [], //must be memoized or stable (useState, useMemo, defined outside of this component, etc.)
-    enableRowSelection: false, //enable some features
-    enableColumnOrdering: true, //enable a feature for all columns
-    enableGlobalFilter: true, //turn off a feature
-    enableColumnFilters: true,
-    isLoading: isLoadingProductos,
-  });
-
   if (isLoadingProductos) {
     return <CircularProgress />;
   }
@@ -200,8 +188,11 @@ export default function Inventario() {
           Agregar Producto
         </Button>
       </Box>
-      <MaterialReactTable table={table} />
-      {/* Formulario para crear o editar productos */}
+      <DataTable
+        data={productos || []}
+        columns={columns}
+        isLoading={isLoadingProductos}
+      />
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
