@@ -16,7 +16,7 @@ import {
 import { useState, useMemo } from "react";
 import useProductos from "../hooks/useProductos";
 import useCreateProducto from "../hooks/productos/useCreateProductos";
-import useDeleteProducto from "../hooks/productos/useDeleteProcusto";
+import useDeleteProducto from "../hooks/productos/useDeleteProducto";
 import useUpdateProducto from "../hooks/productos/useUpdateProductos";
 import useTipoProductos from "../hooks/tipoProducto/useTipoProducto";
 import toast, { Toaster } from "react-hot-toast";
