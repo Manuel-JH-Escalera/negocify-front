@@ -9,29 +9,65 @@ import {
   Select, 
   MenuItem,
   TextField,
-  Container,
   Stack, 
-  Divider
+  Divider,
+  Chip,
+  Alert
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { useNavigate, useParams } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
 import DataTable from "../components/DataTable";
 import GraficoVentas from "./GraficoVentas";
+import useVentas from "../hooks/ventas/useVentas";
+import useDownloadReporte from "../hooks/ventas/useDownloadReporte";
+import useVentasAnalisis from "../hooks/ventas/useVentasAnalisis";
 
-// Datos de ejemplo 
-const VENTAS_MOCK = [
-  { id: 1, fecha: '2025-04-01', monto: 1500, nombreTrabajador: 'Juan Pérez', metodoPago: 'Efectivo' },
-  { id: 2, fecha: '2025-04-01', monto: 2200, nombreTrabajador: 'María García', metodoPago: 'Tarjeta' },
-  { id: 3, fecha: '2025-04-02', monto: 3400, nombreTrabajador: 'Juan Pérez', metodoPago: 'Transferencia' },
-  { id: 4, fecha: '2025-04-03', monto: 1800, nombreTrabajador: 'Carlos López', metodoPago: 'Efectivo' },
-  { id: 5, fecha: '2025-04-05', monto: 2700, nombreTrabajador: 'María García', metodoPago: 'Tarjeta' },
-];
 
 const Ventas = () => {
-  const [ventas, setVentas] = useState(VENTAS_MOCK);
-  const [filteredVentas, setFilteredVentas] = useState(VENTAS_MOCK);
-  const [fechaBusqueda, setFechaBusqueda] = useState('');
+  const { almacenId } = useParams();
+
+  // Estado para el periodo del gráfico
   const [periodoGrafico, setPeriodoGrafico] = useState('mensual');
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { 
+    ventas, 
+    ventasOriginal, 
+    isLoading, 
+    isError, 
+    error,
+    fechaFiltro,
+    setFechaFiltro,
+    refetch
+  } = useVentas(almacenId);
+
+  const { downloadReporte, isDownloading } = useDownloadReporte();
+
+  const { 
+    obtenerDatosGrafico,
+    estadisticas,
+    distribucionMetodosPago
+  } = useVentasAnalisis(ventasOriginal);
+
+  // Función para limpiar el filtro de fecha
+  const handleLimpiarFiltro = () => {
+    setFechaFiltro(null);
+  };
+
+  // Función para descargar el reporte
+  const handleDescargarReporte = () => {
+    downloadReporte(
+      { almacenId },
+      {
+        onSuccess: () => {
+          toast.success('Reporte descargado correctamente');
+        },
+        onError: (error) => {
+          toast.error(`Error al descargar reporte: ${error.message}`);
+        }
+      }
+    );
+  };
 
   // Función de ayuda para formatear de manera segura
   const formatMonto = (value) => {
@@ -47,48 +83,30 @@ const Ventas = () => {
       accessorKey: 'fecha',
       header: 'Fecha',
       size: 150,
+      Cell: ({ cell }) => {
+        const value = cell.getValue();
+        if (!value) return '';
+        return new Date(value).toLocaleDateString('es-CL');
+      },
     },
     {
-      accessorKey: 'monto',
+      accessorKey: 'monto_bruto',
       header: 'Monto bruto',
       size: 150,
       Cell: ({ cell }) => formatMonto(cell.getValue()),
     },
     {
-      accessorKey: 'nombreTrabajador',
+      accessorKey: 'monto_neto',
       header: 'Monto Neto',
-      size: 200,
+      size: 150,
+      Cell: ({ cell }) => formatMonto(cell.getValue()),
     },
     {
       accessorKey: 'metodoPago',
       header: 'Método de Pago',
       size: 150,
     },
-  ];
-
-  // Filtrar ventas por fecha cuando cambia fechaBusqueda
-  useEffect(() => {
-    if (fechaBusqueda) {
-      setIsLoading(true);
-      const ventasFiltradas = ventas.filter(venta => venta.fecha === fechaBusqueda);
-      setFilteredVentas(ventasFiltradas);
-      setIsLoading(false);
-    } else {
-      setFilteredVentas(ventas);
-    }
-  }, [fechaBusqueda, ventas]);
-
-  // Función para limpiar el filtro de fecha
-  const handleLimpiarFiltro = () => {
-    setFechaBusqueda('');
-    setFilteredVentas(ventas);
-  };
-
-  // Función para descargar el reporte 
-  const handleDescargarReporte = () => {
-    console.log('Descargando reporte de ventas...');
-    alert('Reporte descargado con éxito');
-  };
+  ];  
 
   return (
     <Stack spacing={2}>
@@ -105,8 +123,8 @@ const Ventas = () => {
           <TextField
             label="Fecha"
             type="date"
-            value={fechaBusqueda}
-            onChange={(e) => setFechaBusqueda(e.target.value)}
+            value={fechaFiltro || ''}
+            onChange={(e) => setFechaFiltro(e.target.value)}
             InputLabelProps={{
               shrink: true,
             }}
@@ -126,9 +144,14 @@ const Ventas = () => {
         <Typography variant="h6" gutterBottom>
           Listado de ventas
         </Typography>
+        {isError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Error al cargar ventas: {error?.message || 'Error desconocido'}
+          </Alert>
+        )}
         <Box sx={{ width: '100%' }}>
           <DataTable 
-            data={filteredVentas} 
+            data={ventas} 
             columns={columns}
             isLoading={isLoading}
           />
@@ -157,7 +180,11 @@ const Ventas = () => {
           </FormControl>
         </Stack>
         <Box sx={{ height: 300, width: '100%' }}>
-          <GraficoVentas periodo={periodoGrafico} ventas={ventas} />
+          <GraficoVentas 
+            periodo={periodoGrafico} 
+            datos={obtenerDatosGrafico(periodoGrafico)}
+            isLoading={isLoading} 
+          />
         </Box>
       </Paper>
       <Divider/>
@@ -168,10 +195,12 @@ const Ventas = () => {
           startIcon={<FileDownloadIcon />}
           onClick={handleDescargarReporte}
           size="large"
+          disabled={isLoading || isDownloading || ventasOriginal?.length === 0}
         >
-          Descargar reporte
+          {isDownloading ? 'Descargando...' : 'Descargar reporte'}
         </Button>
       </Box>
+      <Toaster position="bottom-right" />
     </Stack>
   );
 };
