@@ -146,7 +146,10 @@ export default function Inventario() {
 
   // Guardar o actualizar producto
   const handleSaveProduct = async () => {
+    console.log(editingProduct)
     if (editingProduct) {
+      console.log("editando producto");
+
       updateProductoMutation.mutate({
         id: editingProduct.id,
         productoData: {
@@ -157,6 +160,7 @@ export default function Inventario() {
         },
       });
     } else if (!editingProduct) {
+      console.log("creando producto");
       createProductoMutation.mutate({
         nombre: newProduct.nombre,
         tipo_producto_id: newProduct.tipo_producto_id,

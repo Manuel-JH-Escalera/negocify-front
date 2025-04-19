@@ -14,7 +14,7 @@ function useCreateProducto(options = {}) {
           Authorization: `Bearer ${userToken}`,
           "Content-Type": "application/json" },
         body: JSON.stringify({
-          productoData, almacen_id: selectedAlmacen?.id,}),
+          ...productoData, almacen_id: selectedAlmacen?.id,}),
       }
     );
 
