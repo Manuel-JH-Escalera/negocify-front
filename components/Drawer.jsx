@@ -27,43 +27,49 @@ import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import useUserStore from "../stores/userStore";
 import { useEffect, useState } from "react";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 const drawerWidth = 240;
 
-const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
-  ({ theme, open }) => ({
-    flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create("margin", {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    marginLeft: 0,
-    ...(open && {
-      transition: theme.transitions.create("margin", {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      marginLeft: `${drawerWidth}px`,
-    }),
-  })
-);
-
-const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== "open",
-})(({ theme, open }) => ({
+const Main = styled("main", {
+  shouldForwardProp: (prop) => prop !== "open" && prop !== "isMobile",
+})(({ theme, open, isMobile }) => ({
+  width: "100%",
+  flexGrow: 1,
+  padding: theme.spacing(3),
   transition: theme.transitions.create(["margin", "width"], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  ...(open && {
-    width: `calc(100% - ${drawerWidth}px)`,
-    marginLeft: `${drawerWidth}px`,
-    transition: theme.transitions.create(["margin", "width"], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
+  marginLeft: isMobile ? 0 : `-${drawerWidth}px`,
+  ...(open &&
+    !isMobile && {
+      width: `calc(100% - ${drawerWidth}px)`,
+      transition: theme.transitions.create(["margin", "width"], {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: 0,
     }),
-  }),
+  overflowX: "auto",
+  "& .MuiCard-root": {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+  },
+  "& .MuiTableContainer-root": {
+    minWidth: 0,
+    overflowX: "auto",
+  },
+  "& .MRT_TableContainer": {
+    minWidth: 0,
+    overflowX: "auto",
+  },
+}));
+
+const AppBar = styled(MuiAppBar)(() => ({
+  width: "100%",
+  zIndex: "1400",
 }));
 
 const DrawerHeader = styled("div")(({ theme }) => ({
@@ -78,6 +84,7 @@ export default function DrawerNegocify() {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const {
     setUserData,
     setUserToken,
@@ -166,11 +173,20 @@ export default function DrawerNegocify() {
                 size="small"
                 variant="outlined"
               >
-                <InputLabel id="almacen-select-label" sx={{ color: "white" }}>
+                <InputLabel
+                  id="almacen-select-label"
+                  sx={{
+                    color: "white",
+                    "&.Mui-focused": {
+                      color: "white",
+                    },
+                  }}
+                >
                   Almacén
                 </InputLabel>
                 <Select
                   labelId="almacen-select-label"
+                  select
                   id="almacen-select"
                   value={selectedAlmacen?.id || ""}
                   label="Almacén"
@@ -209,9 +225,12 @@ export default function DrawerNegocify() {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
+            ...(isMobile && {
+              position: "absolute",
+            }),
           },
         }}
-        variant="temporary"
+        variant={isMobile ? "temporary" : "persistent"}
         anchor="left"
         open={open}
       >
@@ -300,7 +319,7 @@ export default function DrawerNegocify() {
         </List>
         <Divider />
       </Drawer>
-      <Main open={open}>
+      <Main open={open} isMobile={isMobile}>
         <DrawerHeader />
         <Outlet />
       </Main>

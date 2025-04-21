@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import useUserStore from "../stores/userStore";
 
-function useProductos() {
+function useProductos(search, enabled = true) {
   const { selectedAlmacen, userToken } = useUserStore();
 
   const fetchProductos = async () => {
@@ -9,6 +9,18 @@ function useProductos() {
 
     if (selectedAlmacen?.id) {
       params.append("almacen_id", selectedAlmacen?.id);
+    }
+
+    if (search) {
+      if (search?.tipo_producto_id) {
+        params.append("tipo_producto_id", search?.tipo_producto_id);
+      }
+      if (search?.search_name) {
+        params.append("search_name", search?.search_name);
+      }
+      if (search?.search_sku) {
+        params.append("search_sku", search?.search_sku);
+      }
     }
 
     const queryString = params.toString() ? `?${params.toString()}` : "";
@@ -36,9 +48,9 @@ function useProductos() {
   };
 
   return useQuery({
-    queryKey: ["productos", selectedAlmacen?.id],
+    queryKey: ["productos", selectedAlmacen?.id, search],
     queryFn: fetchProductos,
-    enabled: !!userToken && !!selectedAlmacen?.id,
+    enabled: !!userToken && !!selectedAlmacen?.id && enabled,
   });
 }
 

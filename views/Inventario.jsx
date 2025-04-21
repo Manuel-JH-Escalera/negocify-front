@@ -12,6 +12,7 @@ import {
   Select,
   MenuItem,
   Alert,
+  Divider,
 } from "@mui/material";
 import { useState, useMemo } from "react";
 import useProductos from "../hooks/useProductos";
@@ -146,7 +147,7 @@ export default function Inventario() {
 
   // Guardar o actualizar producto
   const handleSaveProduct = async () => {
-    console.log(editingProduct)
+    console.log(editingProduct);
     if (editingProduct) {
       console.log("editando producto");
 
@@ -192,6 +193,7 @@ export default function Inventario() {
           Agregar Producto
         </Button>
       </Box>
+      <Divider />
       <DataTable
         data={productos || []}
         columns={columns}
