@@ -1,18 +1,33 @@
-// hooks/ventas/useVentasAnalisis.js
 import { useMemo } from "react";
 
-/**
- * Hook para analizar datos de ventas y generar estadísticas
- * @param {Array} ventas - Array de objetos de ventas
- */
+
 const useVentasAnalisis = (ventas = []) => {
+  // Función auxiliar para asegurar que estamos trabajando con números
+  const extraerMonto = (venta) => {
+    // Convertir explícitamente a número
+    const monto = Number(venta.monto_bruto || 0);
+    // Verificar que es un número válido
+    return isNaN(monto) ? 0 : monto;
+  };
+
+  // log para depuración
+  useMemo(() => {
+    if (ventas && ventas.length > 0) {
+      console.log("Primera venta para análisis:", ventas[0]);
+      console.log("Monto de la primera venta (convertido a número):", extraerMonto(ventas[0]));
+    }
+  }, [ventas]);
+
   // Calcular datos para análisis según periodo (anual, mensual, semanal)
   const obtenerDatosGrafico = useMemo(() => {
-    // Función para obtener datos según el periodo solicitado
+    // Función para obtener datos formateados según el periodo solicitado
     return (periodo) => {
       if (!ventas || ventas.length === 0) {
+        console.log("No hay ventas para el gráfico");
         return [];
       }
+
+      console.log(`Generando datos para gráfico ${periodo} con ${ventas.length} ventas`);
 
       switch (periodo) {
         case 'anual': {
@@ -24,7 +39,7 @@ const useVentasAnalisis = (ventas = []) => {
             if (!acc[anio]) {
               acc[anio] = 0;
             }
-            acc[anio] += venta.monto || 0;
+            acc[anio] += extraerMonto(venta);
             return acc;
           }, {});
 
@@ -48,7 +63,7 @@ const useVentasAnalisis = (ventas = []) => {
             if (!acc[mes]) {
               acc[mes] = 0;
             }
-            acc[mes] += venta.monto || 0;
+            acc[mes] += extraerMonto(venta);
             return acc;
           }, {});
 
@@ -72,7 +87,7 @@ const useVentasAnalisis = (ventas = []) => {
             if (!acc[diaSemana]) {
               acc[diaSemana] = 0;
             }
-            acc[diaSemana] += venta.monto || 0;
+            acc[diaSemana] += extraerMonto(venta);
             return acc;
           }, {});
 
@@ -103,7 +118,8 @@ const useVentasAnalisis = (ventas = []) => {
       };
     }
 
-    const montos = ventas.map(v => v.monto || 0);
+    // valores numéricos para los montos
+    const montos = ventas.map(v => extraerMonto(v));
     const total = montos.reduce((sum, monto) => sum + monto, 0);
     
     return {
@@ -122,6 +138,7 @@ const useVentasAnalisis = (ventas = []) => {
     }
 
     const distribucion = ventas.reduce((acc, venta) => {
+      //campo metodoPAgo de useVentas.jsx
       if (!venta.metodoPago) return acc;
       
       if (!acc[venta.metodoPago]) {
@@ -132,7 +149,7 @@ const useVentasAnalisis = (ventas = []) => {
       }
       
       acc[venta.metodoPago].count += 1;
-      acc[venta.metodoPago].total += venta.monto || 0;
+      acc[venta.metodoPago].total += extraerMonto(venta);
       
       return acc;
     }, {});

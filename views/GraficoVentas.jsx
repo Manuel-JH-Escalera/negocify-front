@@ -22,10 +22,14 @@ import { Box, Typography, CircularProgress } from '@mui/material';
 const GraficoVentas = ({ periodo, datos = [], isLoading }) => {
   // formatear montos
   const formatMonto = (value) => {
-    if (value === undefined || value === null) {
-      return '$0';
+     // Verificar que es un número y convertirlo si es necesario
+    const numero = typeof value === 'number' ? value : Number(value);
+
+    if (isNaN(numero) || numero === 0) {
+    return '$0';
     }
-    return `$${value.toLocaleString('es-CL')}`;
+    //número con separadores de miles
+    return `$${numero.toLocaleString('es-CL')}`;
   };
 
   // Mostrar indicador de carga si está cargando
@@ -37,17 +41,6 @@ const GraficoVentas = ({ periodo, datos = [], isLoading }) => {
     );
   }
 
-  if (!datos || datos.length === 0) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-        <Typography variant="subtitle1" color="text.secondary">
-          No hay datos disponibles para mostrar
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Si no hay datos, muestra un mensaje
   if (!datos || datos.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -72,7 +65,7 @@ const GraficoVentas = ({ periodo, datos = [], isLoading }) => {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis 
-          tickFormatter={(value) => formatMonto(value)}
+          tickFormatter={formatMonto}
         />
         <Tooltip 
           formatter={(value) => [formatMonto(value), 'Ventas']}

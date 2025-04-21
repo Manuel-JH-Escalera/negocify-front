@@ -22,10 +22,12 @@ import GraficoVentas from "./GraficoVentas";
 import useVentas from "../hooks/ventas/useVentas";
 import useDownloadReporte from "../hooks/ventas/useDownloadReporte";
 import useVentasAnalisis from "../hooks/ventas/useVentasAnalisis";
-
+import useUserStore from '../stores/userStore';
 
 const Ventas = () => {
-  const { almacenId } = useParams();
+  const { selectedAlmacen } = useUserStore();
+  const { almacenId: urlAlmacenId } = useParams();
+  const almacenId = urlAlmacenId || selectedAlmacen?.id;
 
   // Estado para el periodo del gráfico
   const [periodoGrafico, setPeriodoGrafico] = useState('mensual');
@@ -40,6 +42,27 @@ const Ventas = () => {
     setFechaFiltro,
     refetch
   } = useVentas(almacenId);
+
+  console.log("ID de almacén utilizado:", almacenId);
+
+  useEffect(() => {
+    console.log("Ventas filtradas:", ventas.length);
+    console.log("Fecha filtro actual:", fechaFiltro);
+    
+    if (ventas.length === 0 && fechaFiltro) {
+      console.log("ALERTA: No hay ventas para la fecha", fechaFiltro);
+      
+      // Verificar que hay datos originales
+      console.log("Ventas originales disponibles:", ventasOriginal.length);
+      
+      // Mostrar las fechas disponibles para ayudar a depurar
+      const fechasDisponibles = ventasOriginal
+        .map(v => v.fecha ? new Date(v.fecha).toISOString().split('T')[0] : null)
+        .filter(Boolean);
+      
+      console.log("Fechas disponibles en los datos:", [...new Set(fechasDisponibles)]);
+    }
+  }, [ventas, fechaFiltro, ventasOriginal]);
 
   const { downloadReporte, isDownloading } = useDownloadReporte();
 
@@ -56,8 +79,15 @@ const Ventas = () => {
 
   // Función para descargar el reporte
   const handleDescargarReporte = () => {
+    if (!almacenId) {
+      toast.error('No se ha seleccionado un almacén');
+      return;
+    }
+
+    console.log("Descargando reporte para almacenId:", almacenId);
+
     downloadReporte(
-      { almacenId },
+      { almacenId: almacenId },
       {
         onSuccess: () => {
           toast.success('Reporte descargado correctamente');
@@ -67,6 +97,13 @@ const Ventas = () => {
         }
       }
     );
+  };
+
+  // Mapeo de IDs a nombres de métodos de pago
+  const metodoPagoMap = {
+    1: 'Efectivo',
+    2: 'Tarjeta',
+    3: 'Transferencia'
   };
 
   // Función de ayuda para formatear de manera segura
@@ -102,9 +139,13 @@ const Ventas = () => {
       Cell: ({ cell }) => formatMonto(cell.getValue()),
     },
     {
-      accessorKey: 'metodoPago',
+      accessorKey: 'tipo_venta_id',
       header: 'Método de Pago',
       size: 150,
+      Cell: ({ cell }) => {
+        const id = cell.getValue();
+        return metodoPagoMap[id] || `Desconocido (${id})`;
+      },
     },
   ];  
 
@@ -124,7 +165,11 @@ const Ventas = () => {
             label="Fecha"
             type="date"
             value={fechaFiltro || ''}
-            onChange={(e) => setFechaFiltro(e.target.value)}
+            onChange={(e) => {
+              const fechaSeleccionada = e.target.value;
+              console.log("Fecha seleccionada:", fechaSeleccionada);
+              setFechaFiltro(fechaSeleccionada);
+            }}
             InputLabelProps={{
               shrink: true,
             }}
@@ -135,6 +180,47 @@ const Ventas = () => {
             onClick={handleLimpiarFiltro}
           >
             Limpiar filtro
+          </Button>
+          {/* AÑADIDO ESTE BOTÓN PARA DEBUGGING */}
+          <Button 
+            variant="outlined" 
+            color="warning"
+            onClick={() => {
+              console.log("=== DEBUG: Todas las ventas disponibles ===");
+              console.log("Total ventas sin filtrar:", ventasOriginal.length);
+              
+              if (ventasOriginal.length > 0) {
+                console.log("Ejemplo de venta:", ventasOriginal[0]);
+                
+                // Mostrar todas las fechas disponibles
+                const fechasDisponibles = ventasOriginal
+                  .map(v => v.fecha ? new Date(v.fecha).toISOString().split('T')[0] : null)
+                  .filter(Boolean);
+                
+                console.log("Fechas disponibles:", [...new Set(fechasDisponibles)]);
+                
+                // Temporalmente mostrar todas las ventas
+                toast.success(`Mostrando ${ventasOriginal.length} ventas sin filtrar (solo para debug)`);
+              } else {
+                console.log("No hay ventas disponibles");
+                toast.error("No hay ventas disponibles para mostrar");
+              }
+            }}
+          >
+            Ver Datos (Debug)
+          </Button>
+          <Button 
+            variant="contained" 
+            color="secondary"
+            onClick={() => {
+              console.log(`Forzando recarga de ventas para almacén ${almacenId}`);
+              // Limpiar filtro de fecha
+              setFechaFiltro(null);
+              // Forzar recarga
+              refetch();
+            }}
+          >
+            Recargar datos
           </Button>
         </Box>
       </Paper>
@@ -150,6 +236,14 @@ const Ventas = () => {
           </Alert>
         )}
         <Box sx={{ width: '100%' }}>
+          {ventas.length === 0 && fechaFiltro && !isLoading && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              No se encontraron ventas para la fecha {fechaFiltro}.
+              {ventasOriginal.length > 0 ? 
+                " Hay datos disponibles para otras fechas." : 
+                " No hay datos de ventas disponibles."}
+            </Alert>
+          )}
           <DataTable 
             data={ventas} 
             columns={columns}

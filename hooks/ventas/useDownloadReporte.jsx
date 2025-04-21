@@ -2,20 +2,19 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import useUserStore from "../../stores/userStore";
 
-/**
- * Hook para descargar reportes de ventas
- */
+
 const useDownloadReporte = () => {
   const { userToken } = useUserStore();
 
   const downloadReporteMutation = useMutation({
     mutationFn: async ({ almacenId, fechaInicio, fechaFin }) => {
-      if (!almacenId || !token) {
+      if (!almacenId || !userToken) {
         throw new Error("Se requiere ID de almacén y token");
       }
 
       // Construir la URL con parámetros de fecha si están presentes
-      let apiUrl = `${import.meta.env.VITE_API_URL}/ventas/reporte/${almacenId}`;
+      const backUrl = import.meta.env.VITE_BACK_URL;
+      let apiUrl = new URL('/api/ventas/reporte/' + almacenId, backUrl).toString();
       const params = new URLSearchParams();
       
       if (fechaInicio) {
@@ -27,14 +26,17 @@ const useDownloadReporte = () => {
       }
       
       if (params.toString()) {
-        url += `?${params.toString()}`;
+        apiUrl += `?${params.toString()}`;
       }
 
+      console.log("Descargando reporte desde:", apiUrl);
+
+      try {
       const response = await axios.get(apiUrl, {
         headers: {
           Authorization: `Bearer ${userToken}`
         },
-        responseType: 'blob' // Importante para recibir archivos
+        responseType: 'blob' 
       });
 
       // Extraer nombre de archivo de la cabecera Content-Disposition si está disponible
@@ -58,13 +60,18 @@ const useDownloadReporte = () => {
       link.remove();
       
       return { success: true, message: "Reporte descargado correctamente" };
-    }
+    } catch (error) {
+      console.error("Error al descargar reporte:", error);
+      throw error;
+      }
+    },
   });
 
   return {
     downloadReporte: downloadReporteMutation.mutate,
     isDownloading: downloadReporteMutation.isPending,
-    downloadError: downloadReporteMutation.error
+    downloadError: downloadReporteMutation.error,
+    reset: downloadReporteMutation.reset
   };
 };
 
