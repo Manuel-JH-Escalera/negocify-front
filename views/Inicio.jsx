@@ -10,6 +10,7 @@ import {
   ListItem,
   ListItemText,
   CircularProgress,
+  Grid2,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import useUserStore from "../stores/userStore";
@@ -30,7 +31,9 @@ export default function Inicio() {
     const fetchDatos = async () => {
       try {
         const stockRes = await fetch(
-          `${import.meta.env.VITE_BACK_URL}api/productos/bajo-stock?almacen_id=${selectedAlmacen.id}`,
+          `${
+            import.meta.env.VITE_BACK_URL
+          }api/productos/bajo-stock?almacen_id=${selectedAlmacen.id}`,
           {
             headers: { Authorization: `Bearer ${userToken}` },
           }
@@ -38,7 +41,9 @@ export default function Inicio() {
         setAvisosStock(await stockRes.json());
 
         const ventasRes = await fetch(
-          `${import.meta.env.VITE_BACK_URL}api/ventas/recientes?almacen_id=${selectedAlmacen.id}`,
+          `${import.meta.env.VITE_BACK_URL}api/ventas/recientes?almacen_id=${
+            selectedAlmacen.id
+          }`,
           {
             headers: { Authorization: `Bearer ${userToken}` },
           }
@@ -58,13 +63,11 @@ export default function Inicio() {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h5">
-        Bienvenido, {userData?.nombre}
-      </Typography>
+      <Typography variant="h5">Bienvenido, {userData?.nombre}</Typography>
 
-      <Grid container spacing={2}>
+      <Grid2 container spacing={2}>
         {/* Ventas Recientes */}
-        <Grid item xs={12} md={6}>
+        <Grid2 size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
@@ -86,13 +89,18 @@ export default function Inicio() {
               </List>
             </CardContent>
           </Card>
-        </Grid>
+        </Grid2>
 
         {/* Avisos de Stock */}
-        <Grid item xs={12} md={6}>
+        <Grid2 size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Badge badgeContent={avisosStock?.length || 0} color="error">
                     <WarningAmberIcon sx={{ color: "#FFBF00" }} />
@@ -116,10 +124,10 @@ export default function Inicio() {
               </List>
             </CardContent>
           </Card>
-        </Grid>
+        </Grid2>
 
         {/* Gráfico de Ventas */}
-        <Grid item xs={12}>
+        <Grid2 size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
@@ -137,8 +145,8 @@ export default function Inicio() {
               )}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Grid2>
+      </Grid2>
     </Stack>
   );
 }
