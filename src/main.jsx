@@ -11,6 +11,7 @@ import Usuarios from "../views/Usuarios.jsx";
 import Inicio from "../views/Inicio.jsx";
 import Login from "../views/Login.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import NotFound from "../views/NotFound.jsx";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -20,10 +21,7 @@ createRoot(document.getElementById("root")).render(
     <StrictMode>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<App />} />
-
-          {/* rutas autenticación */}
-          <Route path="login" element={<Login />} />
+          <Route path="/" element={<Login />} />
 
           {/* rutas aplicacion */}
           <Route path="dashboard" element={<DrawerNegocify />}>
@@ -33,6 +31,8 @@ createRoot(document.getElementById("root")).render(
             <Route path="punto-venta" element={<PuntoDeVentas />} />
             <Route path="usuarios" element={<Usuarios />} />
           </Route>
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </StrictMode>

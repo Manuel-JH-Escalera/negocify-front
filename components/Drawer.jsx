@@ -26,7 +26,13 @@ import PersonIcon from "@mui/icons-material/Person";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import useUserStore from "../stores/userStore";
 import { useEffect, useState } from "react";
-import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import {
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+} from "@mui/material";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
 const drawerWidth = 240;
@@ -96,7 +102,7 @@ export default function DrawerNegocify() {
 
   useEffect(() => {
     if (!userToken) {
-      navigate("/login");
+      navigate("/");
     }
   }, [userToken, navigate]);
 
@@ -107,7 +113,7 @@ export default function DrawerNegocify() {
   }, [userAlmacenes, selectedAlmacen, setSelectedAlmacen]);
 
   const cerrarSesion = () => {
-    navigate("/login");
+    navigate("/");
     setUserData(null);
     setUserToken(null);
     setSelectedAlmacen(null);
@@ -134,6 +140,21 @@ export default function DrawerNegocify() {
       setSelectedAlmacen(null);
     }
   };
+
+  if (!userToken) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex" }}>

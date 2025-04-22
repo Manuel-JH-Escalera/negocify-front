@@ -7,7 +7,7 @@ import {
   Alert,
   Card,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useUserStore from "../stores/userStore";
 import { useNavigate } from "react-router";
 
@@ -16,7 +16,7 @@ export default function Login() {
     email: "",
     password: "",
   });
-
+  const { userToken } = useUserStore();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -84,6 +84,12 @@ export default function Login() {
       throw error;
     }
   }
+
+  useEffect(() => {
+    if (userToken) {
+      navigate("/dashboard/inicio");
+    }
+  }, [userToken, navigate]);
 
   return (
     <Box
