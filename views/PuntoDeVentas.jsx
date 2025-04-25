@@ -304,6 +304,7 @@ export default function PuntoDeVentas() {
           }
         />
         <TextField
+          select
           id="tipo_producto"
           label="Tipo de producto"
           helperText="Seleccione tipo de producto"
@@ -349,6 +350,7 @@ export default function PuntoDeVentas() {
               </Paper>
               {tiposVenta.length && (
                 <TextField
+                  select
                   id="tipo_venta"
                   label="Tipo de venta"
                   helperText="Seleccione tipo de venta"
