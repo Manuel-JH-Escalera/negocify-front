@@ -179,7 +179,7 @@ export default function DrawerNegocify() {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div">
-              Negocify
+              Negocify - {selectedAlmacen?.nombre}
             </Typography>
           </Box>
 
