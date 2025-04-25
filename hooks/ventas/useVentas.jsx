@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import useUserStore from "../../stores/userStore";
+import { formatearFechaGMT4, sonMismoDiaGMT4, debugFecha } from "../../utils/dateUtils";
 
 // Mapeo de IDs a nombres de métodos de pago
 const metodoPagoMap = {
@@ -120,9 +121,13 @@ const useVentas = (almacenId) => {
         return false;
       }
 
-      const fechaVentaObj = new Date(venta.fecha);
-      // fecha formateada a YYYY-MM-DD
-      const fechaVentaFormateada = fechaVentaObj.toISOString().split("T")[0];
+      const fechaVentaFormateada = formatearFechaGMT4(venta.fecha);
+
+      // Debug info (solo en desarrollo)
+      if (process.env.NODE_ENV === 'development') {
+        debugFecha(venta.fecha, `Venta ${venta.id}`);
+        console.log(`Fecha filtro: ${fechaFiltro}`);
+      }
       
       //si formato coincide
       const coincide = fechaVentaFormateada === fechaFiltro;

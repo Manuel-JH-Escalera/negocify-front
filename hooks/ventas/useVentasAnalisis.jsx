@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { ajustarAGMT4 } from "../../utils/dateUtils";
 
 
 const useVentasAnalisis = (ventas = []) => {
@@ -35,7 +36,8 @@ const useVentasAnalisis = (ventas = []) => {
           const ventasPorAnio = ventas.reduce((acc, venta) => {
             if (!venta.fecha) return acc;
             
-            const anio = new Date(venta.fecha).getFullYear();
+            const fechaVentaGMT4 = ajustarAGMT4(venta.fecha);
+            const anio = fechaVentaGMT4.getFullYear();
             if (!acc[anio]) {
               acc[anio] = 0;
             }
@@ -59,7 +61,8 @@ const useVentasAnalisis = (ventas = []) => {
           const ventasPorMes = ventas.reduce((acc, venta) => {
             if (!venta.fecha) return acc;
             
-            const mes = new Date(venta.fecha).getMonth();
+            const fechaVentaGMT4 = ajustarAGMT4(venta.fecha);
+            const mes = fechaVentaGMT4.getMonth();
             if (!acc[mes]) {
               acc[mes] = 0;
             }
@@ -83,6 +86,7 @@ const useVentasAnalisis = (ventas = []) => {
           const ventasPorDia = ventas.reduce((acc, venta) => {
             if (!venta.fecha) return acc;
             
+            const fechaVentaGMT4 = ajustarAGMT4(venta.fecha);
             const diaSemana = new Date(venta.fecha).getDay();
             if (!acc[diaSemana]) {
               acc[diaSemana] = 0;
