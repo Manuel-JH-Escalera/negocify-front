@@ -207,7 +207,6 @@ export default function DrawerNegocify() {
                 </InputLabel>
                 <Select
                   labelId="almacen-select-label"
-                  select
                   id="almacen-select"
                   value={selectedAlmacen?.id || ""}
                   label="Almacén"
