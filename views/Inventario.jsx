@@ -23,9 +23,11 @@ import useTipoProductos from "../hooks/tipoProducto/useTipoProducto";
 import toast, { Toaster } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import DataTable from "../components/DataTable";
+import useUserStore from "../stores/userStore";
 
 export default function Inventario() {
   const queryClient = useQueryClient();
+  const { selectedAlmacen } = useUserStore();
   const {
     data: productos,
     isLoading: isLoadingProductos,
@@ -64,6 +66,8 @@ export default function Inventario() {
     },
   });
   const [openDialog, setOpenDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deleteProducto, setDeleteProducto] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({
     nombre: "",
@@ -71,6 +75,8 @@ export default function Inventario() {
     stock: 0,
     stock_minimo: 0,
     almacen_id: "",
+    sku: "",
+    valor: 0,
   });
   const { data: categorias } = useTipoProductos();
 
@@ -87,6 +93,23 @@ export default function Inventario() {
       {
         header: "Stock Mínimo",
         accessorKey: "stock_minimo",
+      },
+      {
+        header: "SKU",
+        accessorKey: "sku",
+      },
+
+      {
+        header: "Valor",
+        accessorKey: "valor",
+        Cell: ({ cell }) => (
+          <Typography>
+            {new Intl.NumberFormat("es-CL", {
+              style: "currency",
+              currency: "CLP",
+            }).format(cell.getValue())}
+          </Typography>
+        ),
       },
       {
         header: "Acciones",
@@ -107,7 +130,7 @@ export default function Inventario() {
               variant="contained"
               color="secondary"
               size="small"
-              onClick={() => deleteProductoMutation.mutate(row.original.id)}
+              onClick={() => handleOpenDeletedialog(row.original)}
             >
               Eliminar
             </Button>
@@ -118,13 +141,32 @@ export default function Inventario() {
     []
   );
 
+  // Manejo de apertura del diálogo de eliminación
+  const handleOpenDeletedialog = (producto) => {
+    setDeleteProducto(producto);
+    setOpenDeleteDialog(true);
+  };
+
+  // Manejo de cierre del diálogo de eliminación
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+    setDeleteProducto(null);
+  };
+
+  // Confirmación de eliminación del producto
+  const handleDeleteProducto = () => {
+    if (deleteProducto) {
+      deleteProductoMutation.mutate(deleteProducto.id);
+    }
+    handleCloseDeleteDialog();
+  };
+
   // Manejar cambios en el formulario
   const handleInputChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
   };
 
   const handleSelectChange = (e) => {
-    console.log(e.target.value);
     setNewProduct({ ...newProduct, tipo_producto_id: e.target.value });
   };
 
@@ -136,6 +178,9 @@ export default function Inventario() {
       tipo_producto_id: producto ? producto.tipo_producto_id : "",
       stock: producto ? producto.stock : 0,
       stock_minimo: producto ? producto.stock_minimo : 0,
+      sku: producto ? producto.sku : "",
+      valor: producto ? producto.valor : 0,
+      almacen_id: producto ? producto.almacen_id : selectedAlmacen?.id,
     });
     setOpenDialog(true);
   };
@@ -147,27 +192,25 @@ export default function Inventario() {
 
   // Guardar o actualizar producto
   const handleSaveProduct = async () => {
-    console.log(editingProduct);
     if (editingProduct) {
-      console.log("editando producto");
-
       updateProductoMutation.mutate({
         id: editingProduct.id,
-        productoData: {
-          nombre: newProduct.nombre,
-          tipo_producto_id: newProduct.tipo_producto_id,
-          stock: newProduct.stock,
-          stock_minimo: newProduct.stock_minimo,
-        },
+        nombre: newProduct.nombre,
+        tipo_producto_id: newProduct.tipo_producto_id,
+        stock: newProduct.stock,
+        stock_minimo: newProduct.stock_minimo,
+        sku: newProduct.sku,
+        valor: newProduct.valor,
       });
     } else if (!editingProduct) {
-      console.log("creando producto");
       createProductoMutation.mutate({
         nombre: newProduct.nombre,
         tipo_producto_id: newProduct.tipo_producto_id,
         stock: newProduct.stock,
         stock_minimo: newProduct.stock_minimo,
-        almacen_id: 2,
+        almacen_id: selectedAlmacen?.id,
+        sku: newProduct.sku, // Agregar SKU
+        valor: newProduct.valor, // Agregar Valor
       });
     }
   };
@@ -251,6 +294,23 @@ export default function Inventario() {
               value={newProduct.stock_minimo}
               onChange={handleInputChange}
             />
+            <TextField
+              fullWidth
+              margin="dense"
+              label="SKU"
+              name="sku"
+              value={newProduct.sku}
+              onChange={handleInputChange}
+            />
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Valor"
+              name="valor"
+              type="number"
+              value={newProduct.valor}
+              onChange={handleInputChange}
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -263,6 +323,33 @@ export default function Inventario() {
             loading={updateProductoMutation.isPending}
           >
             Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialogo de confirmación para eliminar producto */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        fullWidth={true}
+        maxWidth="sm"
+      >
+        <DialogTitle>¿Estás seguro de eliminar este producto?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Esta acción no se puede deshacer. ¿Deseas continuar?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} color="secondary">
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleDeleteProducto}
+            color="primary"
+            variant="contained"
+          >
+            Eliminar
           </Button>
         </DialogActions>
       </Dialog>

@@ -305,7 +305,6 @@ export default function PuntoDeVentas() {
         />
         <TextField
           id="tipo_producto"
-          select
           label="Tipo de producto"
           helperText="Seleccione tipo de producto"
           value={searchObject.tipo_producto_id || ""}
@@ -351,7 +350,6 @@ export default function PuntoDeVentas() {
               {tiposVenta.length && (
                 <TextField
                   id="tipo_venta"
-                  select
                   label="Tipo de venta"
                   helperText="Seleccione tipo de venta"
                   value={selectedTipoPago || ""}
