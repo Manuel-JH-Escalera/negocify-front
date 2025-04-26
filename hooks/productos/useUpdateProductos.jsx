@@ -5,7 +5,15 @@ function useUpdateProducto(options = {}) {
   const queryClient = useQueryClient();
   const { userToken, selectedAlmacen } = useUserStore();
 
-  const updateProducto = async ({ id, productoData }) => {
+  const updateProducto = async ({
+    id,
+    nombre,
+    tipo_producto_id,
+    stock,
+    stock_minimo,
+    sku,
+    valor,
+  }) => {
     const response = await fetch(
       `${import.meta.env.VITE_BACK_URL}api/productos/${id}`,
       {
@@ -13,13 +21,19 @@ function useUpdateProducto(options = {}) {
         headers: { 
           "Content-Type": "application/json",
           Authorization: `Bearer ${userToken}`,
-      },
+        },
         body: JSON.stringify({
-          ...productoData,
+          nombre,
+          tipo_producto_id,
+          stock,
+          stock_minimo,
+          sku,
+          valor,
           almacen_id: selectedAlmacen?.id,
         }),
       }
     );
+  
 
     if (!response.ok) {
       throw new Error("Error al actualizar el producto");

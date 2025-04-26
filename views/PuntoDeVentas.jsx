@@ -155,6 +155,11 @@ export default function PuntoDeVentas() {
         accessorKey: "nombre",
       },
       {
+        header: "SKU",
+        accessorKey: "sku",
+        size: 50,
+      },
+      {
         header: "Stock",
         accessorKey: "stock",
         size: 50,
@@ -304,8 +309,8 @@ export default function PuntoDeVentas() {
           }
         />
         <TextField
-          id="tipo_producto"
           select
+          id="tipo_producto"
           label="Tipo de producto"
           helperText="Seleccione tipo de producto"
           value={searchObject.tipo_producto_id || ""}
@@ -350,8 +355,8 @@ export default function PuntoDeVentas() {
               </Paper>
               {tiposVenta.length && (
                 <TextField
-                  id="tipo_venta"
                   select
+                  id="tipo_venta"
                   label="Tipo de venta"
                   helperText="Seleccione tipo de venta"
                   value={selectedTipoPago || ""}

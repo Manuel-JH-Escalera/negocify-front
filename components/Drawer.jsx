@@ -179,7 +179,7 @@ export default function DrawerNegocify() {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div">
-              Negocify
+              Negocify - {selectedAlmacen?.nombre}
             </Typography>
           </Box>
 
@@ -207,7 +207,6 @@ export default function DrawerNegocify() {
                 </InputLabel>
                 <Select
                   labelId="almacen-select-label"
-                  select
                   id="almacen-select"
                   value={selectedAlmacen?.id || ""}
                   label="Almacén"
