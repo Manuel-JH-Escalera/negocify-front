@@ -23,6 +23,7 @@ import useVentas from "../hooks/ventas/useVentas";
 import useDownloadReporte from "../hooks/ventas/useDownloadReporte";
 import useVentasAnalisis from "../hooks/ventas/useVentasAnalisis";
 import useUserStore from "../stores/userStore";
+import { formatearPesoChileno } from "../utils/commonUtils";
 
 const Ventas = () => {
   const { selectedAlmacen } = useUserStore();
@@ -131,13 +132,13 @@ const Ventas = () => {
       accessorKey: "monto_bruto",
       header: "Monto bruto",
       size: 150,
-      Cell: ({ cell }) => formatMonto(cell.getValue()),
+      Cell: ({ cell }) => formatearPesoChileno(parseInt(cell.getValue())),
     },
     {
       accessorKey: "monto_neto",
       header: "Monto Neto",
       size: 150,
-      Cell: ({ cell }) => formatMonto(cell.getValue()),
+      Cell: ({ cell }) => formatearPesoChileno(parseInt(cell.getValue())),
     },
     {
       accessorKey: "tipo_venta_id",

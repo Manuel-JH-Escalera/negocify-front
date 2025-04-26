@@ -155,6 +155,11 @@ export default function PuntoDeVentas() {
         accessorKey: "nombre",
       },
       {
+        header: "SKU",
+        accessorKey: "sku",
+        size: 50,
+      },
+      {
         header: "Stock",
         accessorKey: "stock",
         size: 50,
