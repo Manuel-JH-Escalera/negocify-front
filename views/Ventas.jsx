@@ -13,8 +13,10 @@ import {
   Divider,
   Chip,
   Alert,
+  Tooltip,
 } from "@mui/material";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import { useNavigate, useParams } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import DataTable from "../components/DataTable";
@@ -23,8 +25,8 @@ import useVentas from "../hooks/ventas/useVentas";
 import useDownloadReporte from "../hooks/ventas/useDownloadReporte";
 import useVentasAnalisis from "../hooks/ventas/useVentasAnalisis";
 import useUserStore from "../stores/userStore";
+import useRangoFecha from "../hooks/ventas/useRangoFecha";
 import { formatearFechaChilena, formatearFechaGMT4, obtenerFechaActualGMT4 } from "../utils/dateUtils";
-//import { formatearPesoChileno } from "../utils/commonUtils";
 import { formatearPesoChileno } from "../utils/commonUtils";
 
 const Ventas = () => {
@@ -32,8 +34,7 @@ const Ventas = () => {
   const { almacenId: urlAlmacenId } = useParams();
   const almacenId = urlAlmacenId || selectedAlmacen?.id;
 
-  // Estado para el periodo del gráfico
-  const [periodoGrafico, setPeriodoGrafico] = useState("mensual");
+  const { periodo: periodoGrafico, setPeriodo: setPeriodoGrafico, calcularRangoFechas, descripcionPeriodo } = useRangoFecha();
 
   const {
     ventas,
@@ -45,33 +46,6 @@ const Ventas = () => {
     setFechaFiltro,
     refetch,
   } = useVentas(almacenId);
-
-  console.log("ID de almacén utilizado:", almacenId);
-
-  useEffect(() => {
-    console.log("Ventas filtradas:", ventas.length);
-    console.log("Fecha filtro actual:", fechaFiltro);
-
-    if (ventas.length === 0 && fechaFiltro) {
-      console.log("ALERTA: No hay ventas para la fecha", fechaFiltro);
-
-      // Verificar que hay datos originales
-      console.log("Ventas originales disponibles:", ventasOriginal.length);
-
-      // Mostrar las fechas disponibles para ayudar a depurar
-      if (ventasOriginal.length > 0) {
-        const fechasDisponibles = ventasOriginal
-          .map((v) =>
-            v.fecha ? formatearFechaGMT4(v.fecha) : null
-          )
-          .filter(Boolean);
-
-        console.log("Fechas disponibles en los datos (GMT-4):", [
-          ...new Set(fechasDisponibles),
-        ]);
-      }
-    }
-  }, [ventas, fechaFiltro, ventasOriginal]);
 
   const { downloadReporte, isDownloading } = useDownloadReporte();
 
@@ -90,13 +64,29 @@ const Ventas = () => {
       return;
     }
 
-    console.log("Descargando reporte para almacenId:", almacenId);
+    // Calcular fechaInicio y fechaFin según el periodo seleccionado
+    const { fechaInicio, fechaFin } = calcularRangoFechas(periodoGrafico);
+
+    // Nombre descriptivo del periodo para el mensaje de éxito
+    const nombrePeriodo = (() => {
+      switch(periodoGrafico) {
+        case 'anual': return 'anual';
+        case 'mensual': return 'mensual';
+        case 'semanal': return 'semanal';
+        case 'ultimosSieteDias': return 'de los últimos 7 días';
+        default: return periodoGrafico;
+      }
+    })();
 
     downloadReporte(
-      { almacenId: almacenId },
+      { 
+        almacenId: almacenId, 
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin 
+      },
       {
         onSuccess: () => {
-          toast.success("Reporte descargado correctamente");
+          toast.success(`Reporte ${nombrePeriodo} descargado correctamente`);
         },
         onError: (error) => {
           toast.error(`Error al descargar reporte: ${error.message}`);
@@ -176,7 +166,6 @@ const Ventas = () => {
             value={fechaFiltro || ""}
             onChange={(e) => {
               const fechaSeleccionada = e.target.value;
-              console.log("Fecha seleccionada:", fechaSeleccionada);
               setFechaFiltro(fechaSeleccionada);
             }}
             InputLabelProps={{
@@ -189,21 +178,6 @@ const Ventas = () => {
           />
           <Button variant="outlined" onClick={handleLimpiarFiltro}>
             Limpiar filtro
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={() => {
-              console.log(
-                `Forzando recarga de ventas para almacén ${almacenId}`
-              );
-              // Limpiar filtro de fecha
-              setFechaFiltro(null);
-              // Forzar recarga
-              refetch();
-            }}
-          >
-            Recargar datos
           </Button>
         </Box>
       </Paper>
@@ -251,7 +225,7 @@ const Ventas = () => {
             >
               <MenuItem value="anual">ANUAL</MenuItem>
               <MenuItem value="mensual">MENSUAL</MenuItem>
-              <MenuItem value="semanal">SEMANAL</MenuItem>
+              <MenuItem value="ultimosSieteDias">SEMANAL</MenuItem>
             </Select>
           </FormControl>
         </Stack>
@@ -265,20 +239,31 @@ const Ventas = () => {
       </Paper>
       <Divider />
       {/* Botón para descargar reporte */}
-      <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<FileDownloadIcon />}
-          onClick={handleDescargarReporte}
-          size="large"
-          disabled={isLoading || isDownloading || ventasOriginal?.length === 0}
-        >
-          {isDownloading ? "Descargando..." : "Descargar reporte"}
-        </Button>
-      </Box>
+      <Paper elevation={0} sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>Descargar Reporte</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Typography variant="body2" color="text.secondary">
+            El reporte descargado contendrá solamente las ventas del periodo actual seleccionado ({descripcionPeriodo})
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "center", flex: 1, mt: 2, mb: 1 }}>
+            <Tooltip title={`Descargar reporte de ventas para el periodo: ${descripcionPeriodo}`}>
+              <Button
+                variant="contained"
+                startIcon={<FileDownloadIcon />}
+                endIcon={<FilterAltIcon />}
+                onClick={handleDescargarReporte}
+                size="large"
+                disabled={isLoading || isDownloading || ventasOriginal?.length === 0}
+              >
+                {isDownloading ? "Descargando..." : `Descargar reporte ${periodoGrafico.toUpperCase()}`}
+              </Button>
+            </Tooltip>
+          </Box>
+        </Box>
+      </Paper>
       <Toaster position="top-center" />
     </Stack>
   );
-};
+}
 
 export default Ventas;

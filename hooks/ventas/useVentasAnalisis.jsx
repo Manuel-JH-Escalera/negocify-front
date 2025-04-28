@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { ajustarAGMT4 } from "../../utils/dateUtils";
 
-
-const useVentasAnalisis = (ventas = []) => {
+const useVentasAnalisis = (ventas = [], filtros = {}) => {
   // Función auxiliar para asegurar que estamos trabajando con números
   const extraerMonto = (venta) => {
     // Convertir explícitamente a número
@@ -11,29 +10,53 @@ const useVentasAnalisis = (ventas = []) => {
     return isNaN(monto) ? 0 : monto;
   };
 
-  // log para depuración
+  // Filtrar ventas según criterios (fechaInicio, fechaFin)
+  const ventasFiltradas = useMemo(() => {
+    if (!ventas || ventas.length === 0) return [];
+    if (!filtros || (filtros && !filtros.fechaInicio && !filtros.fechaFin)) return ventas;
+    
+    return ventas.filter(venta => {
+      if (!venta.fecha) return false;
+      
+      const fechaVenta = new Date(venta.fecha);
+      
+      if (filtros.fechaInicio && filtros.fechaFin) {
+        return fechaVenta >= new Date(filtros.fechaInicio) && 
+               fechaVenta <= new Date(filtros.fechaFin);
+      } else if (filtros.fechaInicio) {
+        return fechaVenta >= new Date(filtros.fechaInicio);
+      } else if (filtros.fechaFin) {
+        return fechaVenta <= new Date(filtros.fechaFin);
+      }
+      
+      return true;
+    });
+  }, [ventas, filtros]);
+
+  // Depuración
   useMemo(() => {
-    if (ventas && ventas.length > 0) {
-      console.log("Primera venta para análisis:", ventas[0]);
-      console.log("Monto de la primera venta (convertido a número):", extraerMonto(ventas[0]));
+    if (filtros && (filtros.fechaInicio || filtros.fechaFin)) {
+      console.log("Aplicando filtros de fecha:", filtros);
+      console.log("Ventas antes de filtrar:", ventas.length);
+      console.log("Ventas después de filtrar:", ventasFiltradas.length);
     }
-  }, [ventas]);
+    
+    if (ventasFiltradas && ventasFiltradas.length > 0) {
+    }
+  }, [ventas, ventasFiltradas, filtros]);
 
   // Calcular datos para análisis según periodo (anual, mensual, semanal)
   const obtenerDatosGrafico = useMemo(() => {
     // Función para obtener datos formateados según el periodo solicitado
     return (periodo) => {
-      if (!ventas || ventas.length === 0) {
-        console.log("No hay ventas para el gráfico");
+      if (!ventasFiltradas || ventasFiltradas.length === 0) {
         return [];
       }
-
-      console.log(`Generando datos para gráfico ${periodo} con ${ventas.length} ventas`);
 
       switch (periodo) {
         case 'anual': {
           // Agrupar por año
-          const ventasPorAnio = ventas.reduce((acc, venta) => {
+          const ventasPorAnio = ventasFiltradas.reduce((acc, venta) => {
             if (!venta.fecha) return acc;
             
             const fechaVentaGMT4 = ajustarAGMT4(venta.fecha);
@@ -45,10 +68,12 @@ const useVentasAnalisis = (ventas = []) => {
             return acc;
           }, {});
 
-          return Object.keys(ventasPorAnio).map(anio => ({
+          return Object.keys(ventasPorAnio)
+          .map(anio => ({
             name: `${anio}`,
             ventas: ventasPorAnio[anio]
-          }));
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
         }
         
         case 'mensual': {
@@ -58,7 +83,7 @@ const useVentasAnalisis = (ventas = []) => {
             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
           ];
           
-          const ventasPorMes = ventas.reduce((acc, venta) => {
+          const ventasPorMes = ventasFiltradas.reduce((acc, venta) => {
             if (!venta.fecha) return acc;
             
             const fechaVentaGMT4 = ajustarAGMT4(venta.fecha);
@@ -83,11 +108,11 @@ const useVentasAnalisis = (ventas = []) => {
           // Agrupar por día de la semana
           const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
           
-          const ventasPorDia = ventas.reduce((acc, venta) => {
+          const ventasPorDia = ventasFiltradas.reduce((acc, venta) => {
             if (!venta.fecha) return acc;
             
             const fechaVentaGMT4 = ajustarAGMT4(venta.fecha);
-            const diaSemana = new Date(venta.fecha).getDay();
+            const diaSemana = fechaVentaGMT4.getDay();
             if (!acc[diaSemana]) {
               acc[diaSemana] = 0;
             }
@@ -103,16 +128,59 @@ const useVentasAnalisis = (ventas = []) => {
             }))
             .sort((a, b) => a.orden - b.orden);
         }
+
+        case 'ultimosSieteDias': {
+          // Agrupar por día específico (últimos 7 días)
+          const hoy = new Date();
+          const ultimosSiete = [];
+          
+          // Crear array con las últimas 7 fechas
+          for (let i = 6; i >= 0; i--) {
+            const fecha = new Date(hoy);
+            fecha.setDate(hoy.getDate() - i);
+            ultimosSiete.push({
+              fecha: fecha,
+              key: fecha.toISOString().split('T')[0],
+              label: fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })
+            });
+          }
+          
+          // Inicializar acumulador con fechas y valores cero
+          const acumulador = ultimosSiete.reduce((acc, item) => {
+            acc[item.key] = {
+              name: item.label,
+              ventas: 0,
+              fecha: item.fecha,
+              orden: item.fecha.getTime()
+            };
+            return acc;
+          }, {});
+          
+          // Acumular ventas por día
+          ventasFiltradas.forEach(venta => {
+            if (!venta.fecha) return;
+            
+            const fechaVentaGMT4 = ajustarAGMT4(venta.fecha);
+            const fechaKey = fechaVentaGMT4.toISOString().split('T')[0];
+            
+            if (acumulador[fechaKey]) {
+              acumulador[fechaKey].ventas += extraerMonto(venta);
+            }
+          });
+          
+          // Convertir a array y ordenar por fecha
+          return Object.values(acumulador).sort((a, b) => a.orden - b.orden);
+        }
         
         default:
           return [];
       }
     };
-  }, [ventas]);
+  }, [ventasFiltradas]);
 
   // Calcular estadísticas generales
   const estadisticas = useMemo(() => {
-    if (!ventas || ventas.length === 0) {
+    if (!ventasFiltradas || ventasFiltradas.length === 0) {
       return {
         totalVentas: 0,
         ventaPromedio: 0,
@@ -123,37 +191,43 @@ const useVentasAnalisis = (ventas = []) => {
     }
 
     // valores numéricos para los montos
-    const montos = ventas.map(v => extraerMonto(v));
+    const montos = ventasFiltradas.map(v => extraerMonto(v));
     const total = montos.reduce((sum, monto) => sum + monto, 0);
     
     return {
       totalVentas: total,
-      ventaPromedio: total / ventas.length,
+      ventaPromedio: total / ventasFiltradas.length,
       ventaMaxima: Math.max(...montos),
       ventaMinima: Math.min(...montos),
-      totalRegistros: ventas.length
+      totalRegistros: ventasFiltradas.length
     };
-  }, [ventas]);
+  }, [ventasFiltradas]);
 
-  // Calcular distribución por método de pago
+  // Distribución por método de pago
   const distribucionMetodosPago = useMemo(() => {
-    if (!ventas || ventas.length === 0) {
+    if (!ventasFiltradas || ventasFiltradas.length === 0) {
       return [];
     }
 
-    const distribucion = ventas.reduce((acc, venta) => {
-      //campo metodoPAgo de useVentas.jsx
-      if (!venta.metodoPago) return acc;
+    const metodoPagoMap = {
+      1: 'Efectivo',
+      2: 'Tarjeta',
+      3: 'Transferencia',
+    };
+
+    const distribucion = ventasFiltradas.reduce((acc, venta) => {
+      // Obtener el nombre del método de pago basado en tipo_venta_id
+      const metodoPago = metodoPagoMap[venta.tipo_venta_id] || `Desconocido (${venta.tipo_venta_id})`;
       
-      if (!acc[venta.metodoPago]) {
-        acc[venta.metodoPago] = {
+      if (!acc[metodoPago]) {
+        acc[metodoPago] = {
           count: 0,
           total: 0
         };
       }
       
-      acc[venta.metodoPago].count += 1;
-      acc[venta.metodoPago].total += extraerMonto(venta);
+      acc[metodoPago].count += 1;
+      acc[metodoPago].total += extraerMonto(venta);
       
       return acc;
     }, {});
@@ -163,12 +237,13 @@ const useVentasAnalisis = (ventas = []) => {
       count: distribucion[metodo].count,
       total: distribucion[metodo].total
     }));
-  }, [ventas]);
+  }, [ventasFiltradas]);
 
   return {
     obtenerDatosGrafico,
     estadisticas,
-    distribucionMetodosPago
+    distribucionMetodosPago,
+    ventasFiltradas
   };
 };
 

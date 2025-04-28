@@ -58,7 +58,6 @@ const useVentas = (almacenId) => {
     };
 
     try {
-      console.log(`Fetching ventas from: ${url}`);
       const response = await fetch(url, options);
 
       if (!response.ok) {
@@ -71,7 +70,6 @@ const useVentas = (almacenId) => {
       }
 
       const result = await response.json();
-      console.log(`Ventas recibidas para almacenId ${almacenId}:`, result);
 
       // Asegúrate de que la estructura de datos sea consistente con lo que espera tu componente
       return result;
@@ -112,9 +110,6 @@ const useVentas = (almacenId) => {
 
     if (!fechaFiltro) return ventasOriginal;
 
-    console.log("Filtrando ventas por fecha:", fechaFiltro);
-    console.log("Total de ventas antes de filtrar:", ventasOriginal.length);
-
     const resultadoFiltrado = ventasOriginal.filter((venta) => {
       if (!venta.fecha) {
         console.log("Venta sin fecha:", venta);
@@ -122,33 +117,16 @@ const useVentas = (almacenId) => {
       }
 
       const fechaVentaFormateada = formatearFechaGMT4(venta.fecha);
-
-      // Debug info (solo en desarrollo)
-      if (process.env.NODE_ENV === 'development') {
-        debugFecha(venta.fecha, `Venta ${venta.id}`);
-        console.log(`Fecha filtro: ${fechaFiltro}`);
-      }
       
       //si formato coincide
       const coincide = fechaVentaFormateada === fechaFiltro;
       if (coincide) {
-        console.log("Venta coincide con filtro:", venta);
       }
-
       return coincide;
     });
 
-    console.log("Total de ventas después de filtrar:", resultadoFiltrado.length);
-
     return resultadoFiltrado;
   }, [ventasOriginal, fechaFiltro]);
-
-  console.log("Estado del hook useVentas:", {
-    almacenId,
-    totalVentasOriginal: ventasOriginal.length,
-    totalVentasFiltradas: ventasFiltradas.length,
-    fechaFiltro
-  });
 
   return {
     ventas: ventasFiltradas,

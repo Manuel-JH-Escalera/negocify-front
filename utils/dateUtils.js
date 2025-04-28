@@ -96,11 +96,11 @@ export function debugFecha(fecha, etiqueta = 'Fecha') {
   
   const fechaGMT4 = ajustarAGMT4(fechaObj);
   
-  console.log(`${etiqueta}:`);
+  /*console.log(`${etiqueta}:`);
   console.log(`  Original ISO: ${fechaObj.toISOString()}`);
   console.log(`  GMT-4 ISO: ${fechaGMT4.toISOString()}`);
   console.log(`  Original Local: ${fechaObj.toString()}`);
   console.log(`  GMT-4 Local: ${fechaGMT4.toString()}`);
   console.log(`  Fecha formateada GMT-4 (YYYY-MM-DD): ${formatearFechaGMT4(fechaObj)}`);
-  console.log(`  Fecha formateada GMT-4 (es-CL): ${formatearFechaChilena(fechaObj)}`);
+  console.log(`  Fecha formateada GMT-4 (es-CL): ${formatearFechaChilena(fechaObj)}`); */
 }
