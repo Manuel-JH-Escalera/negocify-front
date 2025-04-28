@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -26,6 +26,7 @@ import useDownloadReporte from "../hooks/ventas/useDownloadReporte";
 import useVentasAnalisis from "../hooks/ventas/useVentasAnalisis";
 import useUserStore from "../stores/userStore";
 import useRangoFecha from "../hooks/ventas/useRangoFecha";
+import useValorDolar from "../hooks/ventas/useValorDolar";
 import { formatearFechaChilena, formatearFechaGMT4, obtenerFechaActualGMT4 } from "../utils/dateUtils";
 import { formatearPesoChileno } from "../utils/commonUtils";
 
@@ -46,6 +47,34 @@ const Ventas = () => {
     setFechaFiltro,
     refetch,
   } = useVentas(almacenId);
+
+  const { data: dolarData, isLoading: isLoadingDolar, isError: isErrorDolar } = useValorDolar();
+
+  const ventasConDolar = useMemo(() => {
+    if (!dolarData || !ventas || ventas.length === 0) {
+      return ventas;
+    }
+
+    // Obtener el valor del dólar
+    const valorDolar = dolarData.valor;
+
+    // Mapear las ventas para agregar el monto en dólares
+    return ventas.map(venta => {
+      // Obtener el monto_neto y verificar si es válido
+      const montoNeto = parseFloat(venta.monto_neto);
+
+      // Calcular el monto en dólares (si montoNeto es 0 o no es un número válido, devolver 0)
+      const montoNetoDolar = isNaN(montoNeto) || montoNeto === 0 ? 
+        0 : 
+        parseFloat((montoNeto / valorDolar).toFixed(2));
+
+      // Devolver la venta con el nuevo campo
+      return {
+        ...venta,
+        monto_neto_dolar: montoNetoDolar
+      };
+    });
+  }, [ventas, dolarData]);
 
   const { downloadReporte, isDownloading } = useDownloadReporte();
 
@@ -135,6 +164,18 @@ const Ventas = () => {
       Cell: ({ cell }) => formatearPesoChileno(parseInt(cell.getValue())),
     },
     {
+      accessorKey: "monto_neto_dolar",
+      header: "Monto Neto USD",
+      size: 150,
+      Cell: ({ cell }) => {
+        const value = cell.getValue();
+        if (value === undefined || value === null || value === 0) {
+          return "$0";
+        }
+        return `$${parseFloat(value).toFixed(2)}`;
+      },
+    },
+    {
       accessorKey: "tipo_venta_id",
       header: "Método de Pago",
       size: 150,
@@ -201,7 +242,7 @@ const Ventas = () => {
                 : " No hay datos de ventas disponibles."}
             </Alert>
           )}
-          <DataTable data={ventas} columns={columns} isLoading={isLoading} />
+          <DataTable data={ventasConDolar} columns={columns} isLoading={isLoading || isLoadingDolar} />
         </Box>
       </Paper>
       <Divider />
