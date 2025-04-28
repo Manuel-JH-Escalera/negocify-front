@@ -29,8 +29,6 @@ const useDownloadReporte = () => {
         apiUrl += `?${params.toString()}`;
       }
 
-      console.log("Descargando reporte desde:", apiUrl);
-
       try {
       const response = await axios.get(apiUrl, {
         headers: {
