@@ -16,24 +16,47 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import { Link, NavLink, useNavigate } from "react-router";
-import { Outlet } from "react-router";
-import HomeIcon from "@mui/icons-material/Home";
-import StorefrontIcon from "@mui/icons-material/Storefront";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import InventoryIcon from "@mui/icons-material/Inventory";
-import PersonIcon from "@mui/icons-material/Person";
+import { NavLink, useNavigate, Outlet, useLocation } from "react-router-dom";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import useUserStore from "../stores/userStore";
 import { useEffect, useState } from "react";
+import { menuItemsConfig } from "../menuConfig.jsx";
 import {
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   CircularProgress,
+  Button,
+  Alert,
+  AlertTitle,
+  Stack,
 } from "@mui/material";
 import useMediaQuery from "@mui/material/useMediaQuery";
+
+function AccessDenied({ deniedPath }) {
+  const navigate = useNavigate();
+  return (
+    <Alert severity="info">
+      <AlertTitle>Acceso Denegado</AlertTitle>
+      <Stack spacing={2}>
+        <Box>
+          No tienes los permisos necesarios para acceder a esta sección (
+          {deniedPath}). Por favor, contacta al administrador si crees que esto
+          es un error.
+        </Box>
+        <Box>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/dashboard/inicio")}
+          >
+            Volver a Inicio
+          </Button>
+        </Box>
+      </Stack>
+    </Alert>
+  );
+}
 
 const drawerWidth = 240;
 
@@ -90,6 +113,7 @@ export default function DrawerNegocify() {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const {
     setUserData,
@@ -129,17 +153,58 @@ export default function DrawerNegocify() {
 
   const handleAlmacenChange = (event) => {
     const selectedId = event.target.value;
-
     const selectedObject = userAlmacenes.find(
       (almacen) => almacen.id === selectedId
     );
-
-    if (selectedObject) {
-      setSelectedAlmacen(selectedObject);
-    } else {
-      setSelectedAlmacen(null);
-    }
+    setSelectedAlmacen(selectedObject || null);
   };
+
+  const currentPath = location.pathname;
+
+  const currentAlmacenInfo = userAlmacenes?.find(
+    (almacen) => almacen.id === selectedAlmacen?.id
+  );
+  const currentUserRole = currentAlmacenInfo ? currentAlmacenInfo.rol : null;
+  const currentUserRoleLower = currentUserRole
+    ? currentUserRole.toLowerCase()
+    : null;
+
+  const visibleMenuItems = menuItemsConfig.filter((item) => {
+    if (
+      !currentUserRoleLower ||
+      !item.allowedRoles ||
+      item.allowedRoles.length === 0
+    ) {
+      return false;
+    }
+    return item.allowedRoles.some(
+      (allowedRole) => allowedRole.toLowerCase() === currentUserRoleLower
+    );
+  });
+
+  let isCurrentRouteAllowed = false;
+  const pathToCheck =
+    currentPath === "/dashboard" ? "/dashboard/inicio" : currentPath;
+  const routeConfig = menuItemsConfig.find((item) => item.path === pathToCheck);
+
+  if (currentUserRoleLower) {
+    if (routeConfig) {
+      const rolesForPath = routeConfig.allowedRoles;
+      if (!rolesForPath || rolesForPath.length === 0) {
+        isCurrentRouteAllowed = true;
+      } else {
+        isCurrentRouteAllowed = rolesForPath.some(
+          (role) => role.toLowerCase() === currentUserRoleLower
+        );
+      }
+    } else if (currentPath.startsWith("/dashboard/")) {
+      isCurrentRouteAllowed = false;
+    } else {
+      isCurrentRouteAllowed = false;
+    }
+  } else {
+    isCurrentRouteAllowed = false;
+  }
 
   if (!userToken) {
     return (
@@ -179,10 +244,9 @@ export default function DrawerNegocify() {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div">
-              Negocify - {selectedAlmacen?.nombre}
+              Negocify - {selectedAlmacen?.nombre || "Cargando..."}
             </Typography>
           </Box>
-
           <Box
             display={"flex"}
             justifyContent={"flex-end"}
@@ -196,12 +260,7 @@ export default function DrawerNegocify() {
               >
                 <InputLabel
                   id="almacen-select-label"
-                  sx={{
-                    color: "white",
-                    "&.Mui-focused": {
-                      color: "white",
-                    },
-                  }}
+                  sx={{ color: "white", "&.Mui-focused": { color: "white" } }}
                 >
                   Almacén
                 </InputLabel>
@@ -222,9 +281,7 @@ export default function DrawerNegocify() {
                     "&:hover .MuiOutlinedInput-notchedOutline": {
                       borderColor: "white",
                     },
-                    ".MuiSvgIcon-root ": {
-                      fill: "white !important",
-                    },
+                    ".MuiSvgIcon-root ": { fill: "white !important" },
                   }}
                 >
                   {userAlmacenes.map((almacen) => (
@@ -245,9 +302,7 @@ export default function DrawerNegocify() {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            ...(isMobile && {
-              position: "absolute",
-            }),
+            ...(isMobile && { position: "absolute" }),
           },
         }}
         variant={isMobile ? "temporary" : "persistent"}
@@ -265,73 +320,26 @@ export default function DrawerNegocify() {
         </DrawerHeader>
         <Divider />
         <List>
-          <ListItem disablePadding>
-            <ListItemButton
-              component={NavLink}
-              to="/dashboard/inicio"
-              onClick={handleDrawerClose}
-            >
-              <ListItemIcon>
-                <HomeIcon />
-              </ListItemIcon>
-              <ListItemText primary={"Inicio"} />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton
-              component={NavLink}
-              to="/dashboard/punto-venta"
-              onClick={handleDrawerClose}
-            >
-              <ListItemIcon>
-                <StorefrontIcon />
-              </ListItemIcon>
-              <ListItemText primary={"Punto de Venta"} />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton
-              component={NavLink}
-              to="/dashboard/ventas"
-              onClick={handleDrawerClose}
-            >
-              <ListItemIcon>
-                <TrendingUpIcon />
-              </ListItemIcon>
-              <ListItemText primary={"Ventas"} />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton
-              component={NavLink}
-              to="/dashboard/inventario"
-              onClick={handleDrawerClose}
-            >
-              <ListItemIcon>
-                <InventoryIcon />
-              </ListItemIcon>
-              <ListItemText primary={"Inventario"} />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton
-              component={NavLink}
-              to="/dashboard/usuarios"
-              onClick={handleDrawerClose}
-            >
-              <ListItemIcon>
-                <PersonIcon />
-              </ListItemIcon>
-              <ListItemText primary={"Usuarios"} />
-            </ListItemButton>
-          </ListItem>
+          {visibleMenuItems.map((item, index) => (
+            <ListItem key={item.path || index} disablePadding>
+              <ListItemButton
+                component={NavLink}
+                to={item.path}
+                onClick={handleDrawerClose}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
         </List>
         <Divider />
         <List>
           <ListItem disablePadding>
             <ListItemButton onClick={cerrarSesion}>
               <ListItemIcon>
-                <ExitToAppIcon />
+                {" "}
+                <ExitToAppIcon />{" "}
               </ListItemIcon>
               <ListItemText primary={"Cerrar Sesión"} />
             </ListItemButton>
@@ -341,7 +349,13 @@ export default function DrawerNegocify() {
       </Drawer>
       <Main open={open} isMobile={isMobile}>
         <DrawerHeader />
-        <Outlet />
+        {isCurrentRouteAllowed ? (
+          <Outlet />
+        ) : currentUserRoleLower ? (
+          <AccessDenied deniedPath={currentPath} />
+        ) : (
+          <CircularProgress sx={{ display: "block", margin: "auto", mt: 4 }} />
+        )}
       </Main>
     </Box>
   );
