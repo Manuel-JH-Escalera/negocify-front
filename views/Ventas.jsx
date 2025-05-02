@@ -22,6 +22,7 @@ import toast, { Toaster } from "react-hot-toast";
 import DataTable from "../components/DataTable";
 import GraficoVentas from "./GraficoVentas";
 import useVentas from "../hooks/ventas/useVentas";
+import useTipoVenta from "../hooks/ventas/useTipoVenta";
 import useDownloadReporte from "../hooks/ventas/useDownloadReporte";
 import useVentasAnalisis from "../hooks/ventas/useVentasAnalisis";
 import useUserStore from "../stores/userStore";
@@ -37,6 +38,8 @@ const Ventas = () => {
 
   const { periodo: periodoGrafico, setPeriodo: setPeriodoGrafico, calcularRangoFechas, descripcionPeriodo } = useRangoFecha();
 
+  const { data: tiposVentaData, isLoading: isLoadingTiposVenta } = useTipoVenta();
+
   const {
     ventas,
     ventasOriginal,
@@ -45,7 +48,6 @@ const Ventas = () => {
     error,
     fechaFiltro,
     setFechaFiltro,
-    refetch,
   } = useVentas(almacenId);
 
   const { data: dolarData, isLoading: isLoadingDolar, isError: isErrorDolar } = useValorDolar();
@@ -125,11 +127,13 @@ const Ventas = () => {
   };
 
   // Mapeo de IDs a nombres de métodos de pago
-  const metodoPagoMap = {
-    1: "Efectivo",
-    2: "Tarjeta",
-    3: "Transferencia",
-  };
+  const metodoPagoMap = useMemo(() => {
+    if (!tiposVentaData) return {};
+    return tiposVentaData.reduce((acc, tipo) => {
+      acc[tipo.id] = tipo.nombre;
+      return acc;
+    }, {});
+  }, [tiposVentaData]);
 
   // Función de ayuda para formatear de manera segura
   const formatMonto = (value) => {
@@ -181,7 +185,7 @@ const Ventas = () => {
       size: 150,
       Cell: ({ cell }) => {
         const id = cell.getValue();
-        return metodoPagoMap[id] || `Desconocido (${id})`;
+        return metodoPagoMap[id] || `Tipo de venta ${id}`;
       },
     },
   ];
