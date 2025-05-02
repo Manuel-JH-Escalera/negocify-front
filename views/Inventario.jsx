@@ -24,6 +24,8 @@ import toast, { Toaster } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import DataTable from "../components/DataTable";
 import useUserStore from "../stores/userStore";
+import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 export default function Inventario() {
   const queryClient = useQueryClient();
@@ -124,7 +126,7 @@ export default function Inventario() {
               onClick={() => handleOpenDialog(row.original)}
               sx={{ mr: 1 }}
             >
-              Editar
+              <DriveFileRenameOutlineIcon />
             </Button>
             <Button
               variant="contained"
@@ -132,7 +134,7 @@ export default function Inventario() {
               size="small"
               onClick={() => handleOpenDeletedialog(row.original)}
             >
-              Eliminar
+              <DeleteIcon />
             </Button>
           </>
         ),
