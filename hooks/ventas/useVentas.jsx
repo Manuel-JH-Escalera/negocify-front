@@ -2,17 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import useUserStore from "../../stores/userStore";
 import { formatearFechaGMT4, sonMismoDiaGMT4, debugFecha } from "../../utils/dateUtils";
+import useTipoVenta from "./useTipoVenta";
 
-// Mapeo de IDs a nombres de métodos de pago
-const metodoPagoMap = {
-  1: 'Efectivo',
-  2: 'Tarjeta',
-  3: 'Transferencia'
-};
 
 const useVentas = (almacenId) => {
   const { userToken } = useUserStore();
   const [fechaFiltro, setFechaFiltro] = useState(null);
+
+  const { data: tiposVentaData } = useTipoVenta();
 
   const calcularMontoNeto = (monto_bruto) => {
     // Verificamos que el monto bruto sea un número válido
@@ -71,7 +68,6 @@ const useVentas = (almacenId) => {
 
       const result = await response.json();
 
-      // Asegúrate de que la estructura de datos sea consistente con lo que espera tu componente
       return result;
     } catch (err) {
       console.error(`Error al obtener ventas para almacenId ${almacenId}:`, err.message);
@@ -95,12 +91,19 @@ const useVentas = (almacenId) => {
   // Datos originales de ventas (sin filtrar)
   const ventasOriginal = useMemo(() => {
     if (!ventasData) return [];
+    const tipoVentaMap = {};
+    if (tiposVentaData) {
+      tiposVentaData.forEach(tipo => {
+        tipoVentaMap[tipo.id] = tipo.nombre;
+      });
+    }
+
     const ventasArray = Array.isArray(ventasData.data) ? ventasData.data: [];
     return ventasArray.map(venta => ({
       ...venta,
-      metodoPago: metodoPagoMap[venta.tipo_venta_id] || `Desconocido (${venta.tipo_venta_id})`
+      metodoPago: tipoVentaMap[venta.tipo_venta_id] || `Desconocido (${venta.tipo_venta_id})`
     }));
-  }, [ventasData]);
+  }, [ventasData, tiposVentaData]);
 
   // Filtrar ventas por fecha si hay un filtro activo
   const ventasFiltradas = useMemo(() => {
@@ -136,7 +139,6 @@ const useVentas = (almacenId) => {
     error,
     fechaFiltro,
     setFechaFiltro,
-    refetch,
     calcularMontoNeto
   };
 };
