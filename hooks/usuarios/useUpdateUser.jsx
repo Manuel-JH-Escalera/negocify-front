@@ -5,11 +5,11 @@ function useUpdateUser(options = {}) {
   const queryClient = useQueryClient();
   const { userToken, selectedAlmacen } = useUserStore();
 
-  const updateUser = async (userDate)
+  const updateUser = async (userData) => {
   const { id, nombre, email, password, rol } = userData;
 
     const response = await fetch(
-      `${import.meta.env.VITE_BACK_URL}api/usuarios/${id}`,
+      `${import.meta.env.VITE_BACK_URL}api/users/${id}`,
       {
         method: "PUT",
         headers: { 

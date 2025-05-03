@@ -6,7 +6,7 @@ function useUsuarios(options = {}) {
 
   const fetchUsuarios = async () => {
     const response = await fetch(
-      `${import.meta.env.VITE_BACK_URL}api/usuarios`,
+      `${import.meta.env.VITE_BACK_URL}api/users`,
       {
         method: "GET",
         headers: { Authorization: `Bearer ${userToken}` },

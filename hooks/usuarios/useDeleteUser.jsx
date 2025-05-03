@@ -7,7 +7,7 @@ function useDeleteUser(options = {}) {
 
   const deleteUser = async (id) => {
     const response = await fetch(
-      `${import.meta.env.VITE_BACK_URL}api/usuarios/${id}`,
+      `${import.meta.env.VITE_BACK_URL}api/users/${id}`,
       {
         method: "DELETE",
         headers: {
