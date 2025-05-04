@@ -131,10 +131,10 @@ export default function DrawerNegocify() {
   }, [userToken, navigate]);
 
   useEffect(() => {
-    if (!selectedAlmacen && userAlmacenes && userAlmacenes.length > 0) {
+    if (userAlmacenes && userAlmacenes.length > 0) {
       setSelectedAlmacen(userAlmacenes[0]);
     }
-  }, [userAlmacenes, selectedAlmacen, setSelectedAlmacen]);
+  }, [userAlmacenes, setSelectedAlmacen]);
 
   const cerrarSesion = () => {
     navigate("/");
