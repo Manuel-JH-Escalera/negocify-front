@@ -99,7 +99,14 @@ export default function Usuarios() {
       { header: "Apellido", accessorKey: "apellido" },
       { header: "Teléfono", accessorKey: "telefono" },
       { header: "Email", accessorKey: "email" },
-      { header: "Rol", accessorKey: "rol" },
+      { 
+        header: "Rol", 
+        accessorKey: "rol", 
+        Cell: ({ row }) => {
+          const roles = row.original.Roles;
+          return roles && roles.length > 0 ? roles[0].nombre : 'Sin rol';
+        }
+      },
       {
         header: "Acciones",
         accessorKey: "acciones",
@@ -151,6 +158,7 @@ export default function Usuarios() {
   };
 
   const handleOpenDialog = (usuario = null) => {
+    console.log("Usuario a editar:", usuario);
     setEditingUser(usuario);
     setNewUser({
       nombre: usuario ? usuario.nombre : "",
@@ -159,9 +167,7 @@ export default function Usuarios() {
       email: usuario ? usuario.email : "",
       password: "",
       rol: usuario ? usuario.rol : "",
-      almacen_id: usuario
-      ? usuario.almacen_id
-      : selectedAlmacen?.id || userAlmacenes?.[0]?.id || "",
+      almacen_id: selectedAlmacen?.id
 
     });
     setOpenDialog(true);
@@ -230,7 +236,6 @@ export default function Usuarios() {
 
   // Verificar si los usuarios están disponibles y en el formato correcto
   // Verifica los datos antes de pasarlos a la tabla
-  console.log("Usuarios en formato esperado:", usuarios.data);
 
   return (
     <Stack spacing={2}>
@@ -307,22 +312,23 @@ export default function Usuarios() {
             <Select
               labelId="Rol"
               id="rol"
-              value={newUser.rol}
+              value={newUser.rol || ""}
               onChange={handleSelectChange}
               fullWidth
+              displayEmpty
             >
-              <MenuItem value="Admin">Administrador</MenuItem>
-              <MenuItem value="User">Usuario</MenuItem>
+              <MenuItem value="" disabled>Seleccione un Rol </MenuItem>
+              <MenuItem value="1">Administrador</MenuItem>
+              <MenuItem value="2">Empleado</MenuItem>
             </Select>
             <Select
             labelId="Almacén"
             id="almacen"
             value={newUser.almacen_id}
-            onChange={(e) =>
-              setNewUser({ ...newUser, almacen_id: e.target.value })
-            }
+            onChange={()=>console.log('se cambio el almacen')}
+            
             fullWidth
-            disabled={userAlmacenes?.length === 1} // <== aquí
+            disabled={true}
           >
             {userAlmacenes?.map((almacen) => (
               <MenuItem key={almacen.id} value={almacen.id}>
