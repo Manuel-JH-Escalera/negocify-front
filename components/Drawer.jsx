@@ -284,11 +284,13 @@ export default function DrawerNegocify() {
                     ".MuiSvgIcon-root ": { fill: "white !important" },
                   }}
                 >
-                  {userAlmacenes.map((almacen) => (
-                    <MenuItem key={almacen.id} value={almacen.id}>
-                      {almacen.nombre}
-                    </MenuItem>
-                  ))}
+                  {[...(userAlmacenes || [])]
+                    .sort((a, b) => a.id - b.id)
+                    .map((almacen) => (
+                      <MenuItem key={almacen.id} value={almacen.id}>
+                        {almacen.nombre}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
             )}

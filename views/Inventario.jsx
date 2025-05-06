@@ -263,7 +263,8 @@ export default function Inventario() {
               value={newProduct.nombre}
               onChange={handleInputChange}
             />
-            <Select
+            <TextField
+              select
               labelId="Categoría"
               id="categoria"
               value={newProduct.tipo_producto_id}
@@ -276,7 +277,7 @@ export default function Inventario() {
                   {categoria.nombre}
                 </MenuItem>
               ))}
-            </Select>
+            </TextField>
 
             <TextField
               fullWidth

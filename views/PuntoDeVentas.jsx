@@ -8,6 +8,7 @@ import {
   TextField,
   MenuItem,
   Paper,
+  Box,
 } from "@mui/material";
 import useProductos from "../hooks/useProductos";
 import { useMemo, useState, useCallback, useEffect } from "react";
@@ -19,11 +20,12 @@ import useTipoVenta from "../hooks/ventas/useTipoVenta";
 import useCreateVenta from "../hooks/ventas/useCreateVenta";
 import { useQueryClient } from "@tanstack/react-query";
 import toast, { Toaster } from "react-hot-toast";
+import useUserStore from "../stores/userStore";
 
 export default function PuntoDeVentas() {
   const queryClient = useQueryClient();
   const [carrito, setCarrito] = useState([]);
-  const [selectedTipoPago, setSelectedTipoPago] = useState();
+  const [selectedTipoPago, setSelectedTipoPago] = useState("");
   const [searchObject, setSearchObject] = useState({
     search_name: null,
     search_sku: null,
@@ -33,6 +35,8 @@ export default function PuntoDeVentas() {
   const { data: tipoProducto } = useTipoProductos();
   const { data: tiposVenta } = useTipoVenta();
   const [totalVenta, setTotalVenta] = useState();
+  const [montoPago, setMontoPago] = useState(0);
+  const { selectedAlmacen } = useUserStore();
 
   const { mutate: createVentaMutation, isPending: isPendingVentaMutation } =
     useCreateVenta({
@@ -276,6 +280,22 @@ export default function PuntoDeVentas() {
     setTotalVenta(total);
   }, [carrito]);
 
+  useEffect(() => {
+    setMontoPago(0);
+  }, [selectedTipoPago]);
+
+  useEffect(() => {
+    setCarrito([]);
+    setMontoPago(0);
+    setSelectedTipoPago("");
+    setTotalVenta(0);
+    setSearchObject({
+      search_name: null,
+      search_sku: null,
+      tipo_producto_id: "",
+    });
+  }, [selectedAlmacen]);
+
   return (
     <Stack spacing={2}>
       <Toaster position="top-center" />
@@ -349,20 +369,28 @@ export default function PuntoDeVentas() {
             bottomToolbar={false}
           />
           {totalVenta ? (
-            <Stack spacing={2} marginTop={2}>
-              <Paper elevation={2} sx={{ mt: 2, p: 1 }}>
-                Total de venta: <b>{formatearPesoChileno(totalVenta)}</b>
-              </Paper>
-              {tiposVenta.length && (
+            <Stack
+              spacing={2}
+              marginTop={3}
+              border={1}
+              borderRadius={2}
+              padding={2}
+              borderColor={"#e0e0e0"}
+            >
+              {tiposVenta?.length && (
                 <TextField
                   select
                   id="tipo_venta"
                   label="Tipo de venta"
                   helperText="Seleccione tipo de venta"
-                  value={selectedTipoPago || ""}
-                  onChange={(e) => setSelectedTipoPago(e.target.value)}
+                  value={selectedTipoPago ?? ""}
+                  onChange={(e) => {
+                    setSelectedTipoPago(e.target.value);
+                  }}
                 >
-                  <MenuItem value="">Tipo de venta</MenuItem>
+                  <MenuItem value="">
+                    <em>Tipo de venta</em>
+                  </MenuItem>
                   {tiposVenta?.map((option) => (
                     <MenuItem key={option.id} value={option.id}>
                       {option.nombre}
@@ -370,6 +398,47 @@ export default function PuntoDeVentas() {
                   ))}
                 </TextField>
               )}
+
+              {(() => {
+                if (!tiposVenta || !selectedTipoPago) {
+                  return false;
+                }
+                const selectedObject = tiposVenta.find(
+                  (opt) => opt.id === selectedTipoPago
+                );
+                return selectedObject?.nombre.toLowerCase() === "efectivo";
+              })() && (
+                <>
+                  <TextField
+                    id="valor-text"
+                    label="Monto pagado con efectivo"
+                    variant="outlined"
+                    helperText="Ingrese monto"
+                    type="number"
+                    value={montoPago}
+                    onChange={(e) => {
+                      setMontoPago(e.target.value);
+                    }}
+                    inputProps={{
+                      inputMode: "decimal",
+                    }}
+                  />
+                  <Paper elevation={2} sx={{ mt: 2, p: 1 }}>
+                    Cambio efectivo usuario:{" "}
+                    <b>
+                      {formatearPesoChileno(
+                        (Number(montoPago) || 0) - totalVenta < 0
+                          ? 0
+                          : (Number(montoPago) || 0) - totalVenta
+                      )}
+                    </b>
+                  </Paper>
+                </>
+              )}
+
+              <Paper elevation={2} sx={{ mt: 2, p: 1 }}>
+                Total de venta: <b>{formatearPesoChileno(totalVenta)}</b>
+              </Paper>
               <Button
                 variant="contained"
                 color="success"
